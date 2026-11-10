@@ -127,3 +127,23 @@ body { font-family: var(--f-ui); -webkit-user-select: none; user-select: none; t
 .abtns button { width: 64px; height: 64px; border-radius: 50%; font-size: 22px; }
 .abtns .b { width: 52px; height: 52px; margin-top: 30px; }
 @media (prefers-reduced-motion: reduce) { .dlg-next { animation: none; } #fade, #place { transition: none; } }
+
+#hud-kas { font-family: var(--f-pixel); font-size: 6.5em; color: var(--muted); line-height: 1.3; }
+.list { display: grid; gap: 4em; }
+.item { background: var(--panel2); border: calc(var(--u) * .5px) solid #3a3024; border-radius: 2em; padding: 5em 6em; }
+.item h3 { margin: 0; font-family: var(--f-text); font-size: 9em; color: var(--gold); font-weight: 600; }
+.item p { margin: .3em 0 0; font-size: 7.5em; line-height: 1.4; }
+.item .meta { font-family: var(--f-pixel); font-size: 6.5em; color: var(--muted); margin-top: .6em; }
+.item .row { display: flex; gap: 4em; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 3em; }
+.prog { flex: 1; min-width: 60em; height: 3em; background: #0e0b09; border-radius: 1.5em; overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--gold); }
+.act { all: unset; cursor: pointer; font-family: var(--f-pixel); font-size: 7em; padding: .25em .9em; border: calc(var(--u) * .5px) solid var(--metal); border-radius: .3em; color: var(--ink); background: #2a231b; }
+.act:hover, .act.sel { color: var(--gold); border-color: var(--gold); background: #3a3024; }
+.act:disabled { opacity: .4; cursor: default; }
+.act.big { display: block; width: 100%; box-sizing: border-box; text-align: left; font-family: var(--f-ui); font-size: 7.5em; padding: .6em 1em; line-height: 1.4; }
+.act.big b { font-family: var(--f-text); color: var(--gold); font-size: 1.15em; display: block; }
+.act.big small { display: block; color: var(--muted); font-family: var(--f-pixel); margin-top: .3em; }
+.letter { background: #e8dcc0; color: #2a2016; padding: 6em 8em; border-radius: 1em; font-family: var(--f-text); }
+.letter p { font-size: 8em; line-height: 1.45; margin: 0 0 .6em; }
+.letter .sig { text-align: right; font-style: italic; }
+.empty { font-size: 8em; color: var(--muted); font-family: var(--f-text); }

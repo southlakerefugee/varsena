@@ -81,7 +81,9 @@ window.V = window.V || {};
           siang: ['Kalistov dari Fort Wendel menulis surat, menanyakan kapan anggaran ksatria dibahas. Ksatria selalu ingat anggaran mereka.', 'Kalau kau butuh orang untuk mengangkat batu, kirim surat ke Lakeward. Prajuritku sudah bosan latihan.'],
           sore: ['Dari teras ini kau bisa melihat seluruh kota. Separuhnya masih hitam. Tapi lihat asap dapur itu, Presiden. Tahun lalu tidak ada.']
         };
-        const arr = l[s.period] || l.pagi; return { pages: [arr[s.day % arr.length]] };
+        const arr = l[s.period] || l.pagi;
+        if (!s.flags.hassanHelp) return { pages: [arr[s.day % arr.length], 'Tawaranku masih berlaku: tiga regu prajurit Lakeward bisa membantu membangun selama aku di sini. Lebih baik mereka memikul balok daripada bermain dadu.'], choices: [{ label: 'Terima bantuan prajurit Lakeward', act: 'hassanHelp' }, { label: 'Tidak sekarang', act: null }] };
+        return { pages: [arr[s.day % arr.length]] };
       }
     },
     {
@@ -96,7 +98,7 @@ window.V = window.V || {};
             'Satu kabar gratis, karena kau pelanggan baru: ada yang membeli karung gandum dalam jumlah besar di pasar gelap. Gandum dengan cap gudang republik.'
           ] };
         }
-        const l = ['Garam dari Islania, jarum dari Gold Mines, kain dari Greenleaf. Lengkap, kecuali pembeli.', 'Di Twin River, kaum Amfibi, Rubah, dan manusia dulu tidak saling menyapa. Perang mengajari kami bahwa tetangga lebih berguna daripada musuh.', 'Kabar dari jalan: penjaga gudang timur sering mabuk. Bukan urusanku, tentu saja.'];
+        const l = ['Garam dari Islania, jarum dari Gold Mines, kain dari Greenleaf. Lengkap, kecuali pembeli.', 'Di Twin River, kaum Amfibi, Rubah, dan manusia dulu tidak saling menyapa. Perang mengajari kami bahwa tetangga lebih berguna daripada musuh.', 'Kabar dari jalan: penjaga gudang timur sering mabuk. Bukan urusanku, tentu saja.', 'Di Gold Mines, sekarung gandum dihargai seperti sepasang sepatu kulit. Para penambang punya emas tapi perutnya kosong. Siapa yang bisa mengirim pangan ke sana akan kaya.'];
         return { pages: [l[s.day % l.length]] };
       }
     },
@@ -144,7 +146,7 @@ window.V = window.V || {};
             'Kalau ada arsitek di republik ini, cari dia, Presiden. Dengan satu arsitek dan sepuluh orang sepertiku, petak-petak kosong itu bisa jadi rumah sebelum musim dingin.'
           ] };
         }
-        const l = ['Petak di sebelah sana sudah kupatok. Tinggal izin dan bahan.', 'Rumah ini dulu milik keluarga penjahit. Kalau mereka pulang, aku ingin mereka menemukan rumah, bukan abu.', 'Tanganku gatal. Tukang tanpa kayu itu seperti prajurit tanpa pedang.'];
+        const l = ['Petak-petak sudah kupatok. Datangi petaknya, Presiden, dan katakan mau dibangun apa. Asal ada uang, kami mulai besok pagi.', 'Petak di sebelah sana sudah kupatok. Tinggal izin dan bahan.', 'Rumah ini dulu milik keluarga penjahit. Kalau mereka pulang, aku ingin mereka menemukan rumah, bukan abu.', 'Tanganku gatal. Tukang tanpa kayu itu seperti prajurit tanpa pedang.'];
         return { pages: [l[s.day % l.length]] };
       }
     },
@@ -177,7 +179,9 @@ window.V = window.V || {};
           ] };
         }
         const l = { malam: ['Malam adalah waktu terbaik. Ikan naik ke permukaan untuk melihat bulan.'], pagi: ['Hari ini dapat tujuh ikan. Kemarin sembilan. Danau sedang malas.', 'Pipin kecil mencoba berenang seperti Oolo. Hampir tenggelam. Oolo menangkapnya seperti ikan.'], siang: ['Matahari terlalu terang. Oolo menyiram kepala setiap jam.'], sore: ['Air danau berwarna emas sore ini. Di Twin River, kami menyebutnya air harapan.'] };
-        const arr = l[s.period]; return { pages: [arr[s.day % arr.length]] };
+        const arr = l[s.period];
+        if (!s.flags.ooloHelp) return { pages: [arr[s.day % arr.length], 'Desa nelayan di South Lake... jaring mereka robek, perahu mereka bocor. Kaum Oolo bisa membantu memperbaiki, kalau Presiden mau.'], choices: [{ label: 'Minta Kaum Oolo membantu nelayan South Lake', act: 'ooloHelp' }, { label: 'Nanti saja', act: null }] };
+        return { pages: [arr[s.day % arr.length]] };
       }
     }
   ];
@@ -215,8 +219,9 @@ window.V = window.V || {};
     st.populasi = st.populasi + Math.round(rand() * 6);
     st.moral = clamp(st.moral + (rand() < .5 ? 1 : -1), 0, 100);
     if (st.pangan < 10) { st.moral = clamp(st.moral - 2, 0, 100); st.stabilitas = clamp(st.stabilitas - 1, 0, 100); }
+    const cityNotes = V.city ? V.city.daily(s, rand) : [];
     const picks = [], pool = EVENTS.slice();
-    const n = 2 + (rand() < .4 ? 1 : 0);
+    const n = cityNotes.length > 3 ? 1 : 2;
     for (let i = 0; i < n && pool.length; i++) {
       const e = pool.splice(Math.floor(rand() * pool.length), 1)[0];
       picks.push(e.text);
@@ -224,11 +229,14 @@ window.V = window.V || {};
       if (e.flag) s.flags[e.flag] = true;
     }
     st.pangan = Math.max(0, st.pangan);
-    s.notes = picks;
+    s.notes = cityNotes.concat(picks);
     s.day += 1; if (s.day > 30) { s.day = 1; s.season = (s.season + 1) % 4; if (s.season === 0) s.year += 1; }
   }
   function advice(s) {
     const st = s.stats;
+    if (s.letters && s.letters.isam === 'received') return 'Walikota Isam dari Gold Mines menunggu jawaban kita. Mereka punya emas dan tidak punya roti; kita punya ladang dan tidak punya uang. Jawab suratnya di halaman Surat. Ingat, perjanjian itu baru menghasilkan uang setelah jalur desa barat dan dermaga South Lake diperbaiki.';
+    if (s.deal && !(s.projects.jalurDesa && s.projects.jalurDesa.done) && !s.projects.jalurDesa) return 'Perjanjian dengan Gold Mines sudah ada, tapi gerobak tidak bisa lewat jembatan yang runtuh. Mulailah proyek jalur desa barat di halaman Proyek.';
+    if (s.waiting && s.waiting.length >= 3) return 'Ada ' + s.waiting.length + ' rombongan menunggu tempat tinggal di alun-alun. Kalau dibiarkan, mereka akan pergi ke Twin River dan membawa tenaga kerjanya bersama mereka.';
     if (s.delegasi === 'tinggi') return 'Aku sudah menandatangani dua belas izin atas namamu kemarin. Semuanya masuk akal. Kau boleh membacanya kalau sempat.';
     if (st.pangan <= 12) return 'Persediaan pangan tinggal ' + st.pangan + ' hari. Kalau South Lake berhenti mengirim gandum, kita punya masalah dalam dua minggu. Aku menyarankan menyelesaikan urusan tanah di sana secepatnya.';
     if (st.moral < 45) return 'Moral rakyat rendah. Mereka butuh sesuatu untuk dirayakan, atau setidaknya sesuatu untuk dikerjakan. Rumah baru akan membantu keduanya.';

@@ -294,6 +294,18 @@ Kota militer Barat dan Timur muncul sebagai **wacana politik** yang harus diputu
 - **Reaksi luar negeri:** Federasi Iskander bisa menganggap kota militer Barat sebagai ancaman.
 - **Siapa pemimpinnya:** butuh jenderal baru yang harus direkrut.
 
+### 8.4 Pendanaan ibu kota: perjanjian pangan Gold Mines (Tahap 2)
+- **Masalah:** Brennhold kekurangan orang dan uang. Gold Mines kelebihan uang tapi kekurangan pangan, karena pasokan dari desa-desa sekitar Brennhold dan ikan dari desa nelayan South Lake terhambat.
+- **Surat Walikota Isam** datang di pagi hari ke-2. Pemain membalas lewat halaman Surat di meja kerja dengan tiga pilihan:
+  - **Harga adil:** uang muka 300, sekitar 40 keping/hari, hubungan Gold Mines naik.
+  - **Dana pembangunan di muka:** uang muka 800, sekitar 20 keping/hari.
+  - **Harga tinggi:** uang muka 200, sekitar 70 keping/hari, hubungan Gold Mines turun dan ada keluhan berkala.
+  - Jika delegasi **Tinggi** dan surat dibiarkan, Aldric menandatangani "harga tinggi" atas nama Presiden.
+- **Pendapatan baru mengalir setelah jalur dibuka** lewat dua proyek:
+  - **Jalur Desa Barat** (Brennhold): separuh pendapatan masuk kas ibu kota. Juga mendatangkan lebih banyak rombongan petani.
+  - **Dermaga dan Rumah Asap Ikan South Lake:** separuh lainnya; 40% untuk kas ibu kota, 60% untuk South Lake. Lebih cepat jika Kaum Oolo diminta membantu.
+- **Tenaga kerja:** tukang tetap, prajurit Lakeward (bantuan Hassan), pekerja harian sewaan, dan rombongan tukang yang pindah masuk.
+
 ---
 
 ## 9. Penemuan

@@ -12,7 +12,7 @@
     <canvas id="screen" width="480" height="270" aria-label="Layar permainan Varsena"></canvas>
     <div id="ui">
       <div id="hud" hidden>
-        <div class="clock"><span id="hud-date"></span><span id="hud-time"></span></div>
+        <div class="clock"><span id="hud-date"></span><span id="hud-time"></span><span id="hud-kas"></span></div>
       </div>
       <div id="place" hidden></div>
       <div id="hint" hidden></div>
@@ -30,6 +30,7 @@
 
       <div id="office" class="frame panel" hidden></div>
       <div id="menu" class="frame panel small" hidden></div>
+      <div id="build" class="frame panel" hidden></div>
 
       <div id="title">
         <div class="title-inner">
@@ -44,7 +45,7 @@
             <input id="name-input" maxlength="14" autocomplete="off" value="Aren">
             <button type="submit">Mulai</button>
           </form>
-          <p class="title-note">Tahap 1 · Fondasi</p>
+          <p class="title-note">Tahap 2 · Kota</p>
         </div>
       </div>
       <div id="fade"></div>
@@ -68,4 +69,5 @@
 <script src="src/art.js"></script>
 <script src="src/data.js"></script>
 <script src="src/maps.js"></script>
+<script src="src/city.js"></script>
 <script src="src/game.js"></script>

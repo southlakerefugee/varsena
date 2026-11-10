@@ -118,11 +118,9 @@ window.V = window.V || {};
       for (let xx = a; xx < a + w; xx += 2) { k.px(xx, b, '#d8c690'); k.px(xx, b + h - 1, '#d8c690'); }
       for (let yy = b; yy < b + h; yy += 2) { k.px(a, yy, '#d8c690'); k.px(a + w - 1, yy, '#d8c690'); }
       for (const [sx, sy] of [[a, b], [a + w - 1, b], [a, b + h - 1], [a + w - 1, b + h - 1]]) k.r(sx - 1, sy - 4, 3, 5, P.wood2);
-      prop(m, A.props.sign(a), a + w / 2, b + 24, [a + w / 2 - 4, b + 18, 8, 6]);
-      m.inter.push({ r: [a, b, w, h], text: ['Petak kosong. Patok dan tali sudah dipasang oleh Barro.', 'Di sini bisa dibangun rumah baru untuk warga yang pulang. (Membangun akan tersedia di Tahap 2.)'] });
     }
     // ladang berpagar
-    const fx = 460, fy = 300, fw = 260, fh = 130;
+    const fx = 460, fy = 300, fw = 260, fh = 100;
     for (let yy = fy; yy < fy + fh; yy++) for (let xx = fx; xx < fx + fw; xx++) k.px(xx, yy, k.nz(P.soil, .06));
     for (let yy = fy + 6, row = 0; yy < fy + fh - 4; yy += 8, row++) { k.r(fx + 4, yy, fw - 8, 3, P.soil2); for (let xx = fx + 8 + (row % 2) * 3; xx < fx + fw - 8; xx += 7) if (k.R() < .82) { k.px(xx, yy - 1, P.sprout); k.px(xx - 1, yy - 2, P.sprout); k.px(xx + 1, yy - 2, A.light(P.sprout, .25)); k.px(xx, yy - 3, A.light(P.sprout, .15)); } }
     const post = (x, y) => { k.r(x - 1, y - 6, 3, 8, P.wood); k.r(x - 1, y - 6, 1, 8, A.light(P.wood, .25)); };
@@ -136,13 +134,17 @@ window.V = window.V || {};
     k.water(0, 480, 768, 96); for (let xx = 0; xx < 768; xx++) k.px(xx, 480, A.light(P.water, .35));
     for (const [a, b] of [[20, 120], [300, 400]]) for (let xx = a; xx < b; xx += 3) if (k.R() < .6) { k.r(xx, 464 - k.R() * 4, 1, 8, '#3d5a28'); }
     k.r(610, 440, 36, 136, P.wood); for (let yy = 443; yy < 576; yy += 4) k.r(610, yy, 36, 1, P.wood2); k.r(608, 440, 2, 136, P.beam); k.r(646, 440, 2, 136, P.beam);
+    // petak tepi danau (untuk rumah panggung)
+    for (let xx = 470; xx < 590; xx += 2) { k.px(xx, 412, '#d8c690'); k.px(xx, 465, '#d8c690'); }
+    for (let yy = 412; yy < 466; yy += 2) { k.px(470, yy, '#d8c690'); k.px(589, yy, '#d8c690'); }
+    for (const [sx, sy] of [[470, 412], [589, 412], [470, 465], [589, 465]]) k.r(sx - 1, sy - 4, 3, 5, P.wood2);
     prop(m, A.props.boat(40), 708, 540);
     m.solids.push([0, 478, 608, 98], [648, 478, 120, 98]);
     m.inter.push({ r: [100, 474, 200, 10], text: ['Danau Doran. Airnya dingin dan jernih. Di kejauhan terlihat samar-samar menara South Lake City.'] });
     prop(m, A.props.lampPost(41), 650, 452, [646, 448, 8, 4]); m.lights.push({ x: 650, y: 416, r: 64 });
     prop(m, A.props.lampPost(42), 432, 246, [428, 242, 8, 4]); m.lights.push({ x: 432, y: 210, r: 64 });
     // pohon
-    for (const [tx, ty, ts] of [[18, 232, 40], [748, 236, 38], [330, 430, 34], [446, 452, 30], [160, 446, 36], [740, 452, 34], [12, 440, 30]]) prop(m, A.props.tree(tx + ty, ts), tx, ty, [tx - 5, ty - 10, 10, 8]);
+    for (const [tx, ty, ts] of [[18, 232, 40], [748, 236, 38], [338, 300, 34], [420, 456, 30], [168, 456, 30], [260, 440, 32], [740, 452, 34], [12, 440, 30]]) prop(m, A.props.tree(tx + ty, ts), tx, ty, [tx - 5, ty - 10, 10, 8]);
     prop(m, A.props.barrels(43), 30, 170, [16, 162, 28, 8]); prop(m, A.props.crates(44), 610, 172, [594, 162, 32, 10]);
     return m;
   }

@@ -20,6 +20,7 @@ lalu buka http://localhost:8000. Kontrol: panah/WASD berjalan, Shift berlari, Z/
   - `src/art.js`: sprite 4 arah, potret, bangunan dan properti
   - `src/maps.js`: peta Brennhold
   - `src/data.js`: tokoh, dialog, laporan harian
+  - `src/city.js`: bangunan, konstruksi, rombongan pendatang, proyek, perjanjian Gold Mines
   - `src/game.js`: mesin permainan
 - `docs/dokumen-desain.md`: dokumen desain game (dunia, cerita, sistem, lingkup demo)
 - `docs/sketsa/opsi-visual.html`: sketsa gaya visual (buka di browser). Gaya yang dipilih: **Opsi D, 32-bit Klasik**
@@ -29,7 +30,7 @@ lalu buka http://localhost:8000. Kontrol: panah/WASD berjalan, Shift berlari, Z/
 - [x] Desain awal
 - [x] Gaya visual
 - [x] Tahap 1: Fondasi (jalan-jalan, waktu, dialog, kantor, tidur, simpan)
-- [ ] Tahap 2: Kota
+- [x] Tahap 2: Kota (membangun, pendatang, proyek jalur pangan, perjanjian pangan Gold Mines)
 - [ ] Tahap 3: Orang
 - [ ] Tahap 4: Krisis
 - [ ] Tahap 5: Klimaks
