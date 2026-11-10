@@ -1,0 +1,71 @@
+<meta charset="utf-8">
+<title>Varsena</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;600;700&family=Alegreya+Sans:wght@400;500;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<link rel="stylesheet" href="src/style.css">
+
+<div id="app">
+  <div id="game">
+    <canvas id="screen" width="480" height="270" aria-label="Layar permainan Varsena"></canvas>
+    <div id="ui">
+      <div id="hud" hidden>
+        <div class="clock"><span id="hud-date"></span><span id="hud-time"></span></div>
+      </div>
+      <div id="place" hidden></div>
+      <div id="hint" hidden></div>
+      <div id="toast" hidden></div>
+
+      <div id="dialog" class="frame" hidden>
+        <div class="portrait" id="dlg-portrait"></div>
+        <div class="dlg-body">
+          <p class="dlg-name"><span id="dlg-name"></span><small id="dlg-title"></small></p>
+          <p class="dlg-text" id="dlg-text"></p>
+          <ul class="dlg-choices" id="dlg-choices" hidden></ul>
+        </div>
+        <span class="dlg-next" id="dlg-next" aria-hidden="true">▼</span>
+      </div>
+
+      <div id="office" class="frame panel" hidden></div>
+      <div id="menu" class="frame panel small" hidden></div>
+
+      <div id="title">
+        <div class="title-inner">
+          <p class="eyebrow">Republik yang baru lahir</p>
+          <h1>VARSENA</h1>
+          <div id="title-buttons" class="title-buttons">
+            <button type="button" id="btn-continue">Lanjutkan</button>
+            <button type="button" id="btn-new">Permainan Baru</button>
+          </div>
+          <form id="name-form" class="name-form" hidden>
+            <label for="name-input">Nama Presiden</label>
+            <input id="name-input" maxlength="14" autocomplete="off" value="Aren">
+            <button type="submit">Mulai</button>
+          </form>
+          <p class="title-note">Tahap 1 · Fondasi</p>
+        </div>
+      </div>
+      <div id="fade"></div>
+    </div>
+  </div>
+
+  <div id="touch" hidden>
+    <div class="dpad">
+      <button type="button" data-k="up" aria-label="Atas">▲</button>
+      <button type="button" data-k="left" aria-label="Kiri">◀</button>
+      <button type="button" data-k="right" aria-label="Kanan">▶</button>
+      <button type="button" data-k="down" aria-label="Bawah">▼</button>
+    </div>
+    <div class="abtns">
+      <button type="button" data-k="b" class="b" aria-label="Menu atau batal">B</button>
+      <button type="button" data-k="a" class="a" aria-label="Bicara atau periksa">A</button>
+    </div>
+  </div>
+</div>
+
+<script src="src/art.js"></script>
+<script src="src/data.js"></script>
+<script src="src/maps.js"></script>
+<script src="src/game.js"></script>
