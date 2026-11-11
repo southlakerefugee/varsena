@@ -164,7 +164,7 @@ window.V = window.V || {};
     }
     // rombongan baru datang sepanjang hari
     s.arriveT += dt;
-    if (s.arriveT >= 45) {
+    if (s.arriveT >= 80) {
       s.arriveT = 0;
       const chance = .3 + st.moral / 250 + (s.projects.jalurDesa && s.projects.jalurDesa.done ? .15 : 0);
       if (s.waiting.length < 5 && rand() < chance) { const g = newGroup(s, rand); s.waiting.push(g); const t = `Rombongan ${g.leader} dari ${g.origin} (${g.size} jiwa, ${g.kind}) tiba di alun-alun.`; events.push(t); s.today.push(t); changed = true; }

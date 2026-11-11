@@ -2,7 +2,7 @@
 /* Varsena — mesin permainan Tahap 1: gerak, tabrakan, kamera, waktu, cahaya, dialog, kantor, menu, simpan. */
 (function (V) {
   const A = V.art, D = V.data, M = V.maps, C = V.city;
-  const VW = 480, VH = 270, TIME_RATE = 4.5; // menit permainan per detik nyata: satu hari (06:00–24:00) sekitar 4 menit
+  const VW = 480, VH = 270, TIME_RATE = 1.8; // menit permainan per detik nyata: satu hari (06:00–24:00) sekitar 10 menit
   const SAVE_KEY = 'varsena.save.v1';
   const $ = id => document.getElementById(id);
   const cv = $('screen'), ctx = cv.getContext('2d');
@@ -448,7 +448,7 @@
       'Kamu, ' + S.name + ', yang memimpin perang kemerdekaan, kini menjadi Presiden pertamanya.',
       'Ini pagi pertamamu di Balai Republik. Perang sudah selesai. Pekerjaan yang sesungguhnya baru dimulai.',
       'Berjalan: tombol panah atau WASD (tahan Shift untuk berlari). Bicara dan periksa: Z atau Spasi. Menu: X atau Esc.',
-      'Hari berganti sendiri tengah malam, kira-kira setiap 4 menit. Bangunan dan proyek dikerjakan terus selama kamu bermain.'
+      'Hari berganti sendiri tengah malam, kira-kira setiap 10 menit. Bangunan dan proyek dikerjakan terus selama kamu bermain.'
     ] });
     else toast('Selamat datang kembali, Presiden ' + S.name);
   }

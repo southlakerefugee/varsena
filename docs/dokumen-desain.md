@@ -152,7 +152,7 @@ Kedua jalur memberi pengalaman berbeda: Aldric berarti **akurat tapi berbahaya k
 ## 5. Peran Pemain dan Loop Harian
 
 ### 5.1 Waktu (gaya Metropolismania)
-- Satu hari (06:00–24:00) berjalan sekitar **4 menit nyata**, dibagi pagi, siang, sore, malam.
+- Satu hari (06:00–24:00) berjalan sekitar **10 menit nyata**, dibagi pagi, siang, sore, malam.
 - **Hari berganti sendiri pukul 24:00.** Pemain tidak wajib tidur; tempat tidur hanya untuk melompat ke pagi berikutnya.
 - Laporan harian dan penyimpanan otomatis terjadi saat hari berganti.
 - **Pembangunan berjalan dalam waktu nyata:** dengan 6 pekerja, rumah sekitar 3 menit, toko sekitar 5 menit. Setiap 3 pekerja membentuk satu tim; pekerjaan di luar jumlah tim menunggu giliran. Pekerja tambahan mempercepat semua pekerjaan.
