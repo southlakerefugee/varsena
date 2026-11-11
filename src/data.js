@@ -146,7 +146,7 @@ window.V = window.V || {};
             'Kalau ada arsitek di republik ini, cari dia, Presiden. Dengan satu arsitek dan sepuluh orang sepertiku, petak-petak kosong itu bisa jadi rumah sebelum musim dingin.'
           ] };
         }
-        const l = ['Petak-petak sudah kupatok. Datangi petaknya, Presiden, dan katakan mau dibangun apa. Asal ada uang, kami mulai besok pagi.', 'Petak di sebelah sana sudah kupatok. Tinggal izin dan bahan.', 'Rumah ini dulu milik keluarga penjahit. Kalau mereka pulang, aku ingin mereka menemukan rumah, bukan abu.', 'Tanganku gatal. Tukang tanpa kayu itu seperti prajurit tanpa pedang.'];
+        const l = ['Petak-petak sudah kupatok. Datangi petaknya, Presiden, dan katakan mau dibangun apa. Asal ada uang, beberapa menit kemudian rumahnya sudah berdiri.', 'Petak di sebelah sana sudah kupatok. Tinggal izin dan bahan.', 'Rumah ini dulu milik keluarga penjahit. Kalau mereka pulang, aku ingin mereka menemukan rumah, bukan abu.', 'Tanganku gatal. Tukang tanpa kayu itu seperti prajurit tanpa pedang.'];
         return { pages: [l[s.day % l.length]] };
       }
     },

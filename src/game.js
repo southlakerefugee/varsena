@@ -2,7 +2,7 @@
 /* Varsena — mesin permainan Tahap 1: gerak, tabrakan, kamera, waktu, cahaya, dialog, kantor, menu, simpan. */
 (function (V) {
   const A = V.art, D = V.data, M = V.maps, C = V.city;
-  const VW = 480, VH = 270, TIME_RATE = 1.5; // menit permainan per detik nyata
+  const VW = 480, VH = 270, TIME_RATE = 4.5; // menit permainan per detik nyata: satu hari (06:00–24:00) sekitar 4 menit
   const SAVE_KEY = 'varsena.save.v1';
   const $ = id => document.getElementById(id);
   const cv = $('screen'), ctx = cv.getContext('2d');
@@ -171,7 +171,7 @@
   /* ---------- aksi ---------- */
   function doAct(act) {
     if (act === 'office') openOffice();
-    else if (act === 'sleep') sleep(false);
+    else if (act === 'sleep') sleep();
     else if (act === 'hassanHelp') { S.flags.hassanHelp = true; S.stats.stabilitas = Math.max(0, S.stats.stabilitas - 1); openDialog({ name: 'Jenderal Hassan', title: 'Kastil Lakeward', spec: 'hassan', pages: ['Bagus! Besok pagi tiga regu prajuritku melapor ke Barro. Mereka akan menggerutu sehari, lalu bekerja seperti kerbau.', 'Kalistov pasti menulis surat soal prajurit yang "dipakai jadi kuli". Biar saja. (Pekerja +4)'] }); }
     else if (act === 'ooloHelp') { S.flags.ooloHelp = true; if (S.projects.dermagaSL && !S.projects.dermagaSL.done) S.projects.dermagaSL.work = Math.round(S.projects.dermagaSL.work / 2); openDialog({ name: 'Oolo', title: 'Nelayan dari Twin River', spec: 'oolo', pages: ['Gluk! Oolo akan mengirim kabar lewat sungai. Saudara-saudara Oolo akan datang ke desa nelayan South Lake untuk menambal jaring dan perahu.', '(Proyek Dermaga dan Rumah Asap Ikan South Lake jadi dua kali lebih cepat.)'] }); }
   }
@@ -182,7 +182,7 @@
     const p = C.plotById(id), b = S.builds[id];
     if (!b) return openBuild(id);
     const t = C.TYPES[b.type], g = S.residents[id];
-    if (!b.done) return openDialog({ name: 'Barro', title: 'Tukang kayu', spec: 'barro', pages: [`${t.name} di ${p.label.toLowerCase()}: ${Math.round(b.prog / b.work * 100)}% selesai.`, `Dengan ${C.workforce(S)} pekerja, kira-kira ${C.daysLeft(S, b)} hari lagi. Pembangunan maju setiap kali hari berganti.`] });
+    if (!b.done) return openDialog({ name: 'Barro', title: 'Tukang kayu', spec: 'barro', pages: [`${t.name} di ${p.label.toLowerCase()}: ${Math.round(b.prog / b.work * 100)}% selesai.`, `Dengan ${C.workforce(S)} pekerja: ${C.etaText(S, b)}.`] });
     if (g) return openDialog({ pages: [`${t.name}. Dihuni rombongan ${g.leader} dari ${g.origin}, ${g.size} jiwa.`] });
     if (!t.fits.length) return openDialog({ pages: [`${t.name}. ${t.desc}`] });
     openDialog({ pages: [`${t.name} ini sudah selesai tapi belum berpenghuni. Rombongan yang cocok (${t.fits.join(' atau ')}) akan pindah ke sini begitu ada yang datang.`] });
@@ -194,8 +194,8 @@
     const jobs = C.activeJobs(S).length + 1, per = C.workforce(S) / jobs;
     $('build').innerHTML = `<h2>${p.kind === 'burnt' ? 'Bangun ulang' : 'Bangun'}: ${p.label}</h2><p class="sub">Kas ${S.stats.kas.toLocaleString('id-ID')} keping · ${C.workforce(S)} pekerja · ${C.activeJobs(S).length} pekerjaan berjalan</p>
       <div class="panel-body"><div class="list" style="margin-top:4em">${types.map((k, i) => {
-        const t = C.TYPES[k], c = C.costOf(p, k), wait = S.waiting.filter(g => t.fits.includes(g.kind)).length, days = Math.max(1, Math.ceil(c.work / per));
-        return `<button type="button" class="act big${i === build.sel ? ' sel' : ''}" data-b="${k}" ${S.stats.kas < c.cost ? 'disabled' : ''}><b>${t.name}</b>${t.desc}<small>${c.cost} keping · sekitar ${days} hari${t.fits.length ? ' · untuk ' + t.fits.join('/') + (wait ? ` · ${wait} rombongan menunggu` : '') : ''}${S.stats.kas < c.cost ? ' · kas tidak cukup' : ''}</small></button>`;
+        const t = C.TYPES[k], c = C.costOf(p, k), wait = S.waiting.filter(g => t.fits.includes(g.kind)).length, days = Math.max(1, Math.round(c.work / (1 + (C.workforce(S) - 6) * .06) / 60));
+        return `<button type="button" class="act big${i === build.sel ? ' sel' : ''}" data-b="${k}" ${S.stats.kas < c.cost ? 'disabled' : ''}><b>${t.name}</b>${t.desc}<small>${c.cost} keping · sekitar ${days} menit${t.fits.length ? ' · untuk ' + t.fits.join('/') + (wait ? ` · ${wait} rombongan menunggu` : '') : ''}${S.stats.kas < c.cost ? ' · kas tidak cukup' : ''}</small></button>`;
       }).join('')}</div></div>
       <div class="panel-foot"><span>▲ ▼ pilih · Z bangun · X batal</span><button type="button" id="build-close">Batal</button></div>`;
     $('build').querySelectorAll('[data-b]').forEach((b, i) => b.addEventListener('click', () => { build.sel = i; doBuild(); }));
@@ -204,8 +204,8 @@
   function doBuild() {
     const p = C.plotById(build.id), k = C.PLOT_ALLOW[p.kind][build.sel];
     if (!C.startBuild(S, build.id, k)) { toast('Kas tidak cukup'); return; }
-    closeBuild(); C.decorate(map, S); hudKey = ''; updateHud();
-    openDialog({ name: 'Barro', title: 'Tukang kayu', spec: 'barro', pages: [`${C.TYPES[k].name}! Baik, Presiden. Patok sudah siap, bahan akan datang sore ini.`, 'Kami mulai bekerja besok pagi. Setiap hari yang berganti, bangunannya bertambah tinggi.'] });
+    const bid = build.id; closeBuild(); C.decorate(map, S); hudKey = ''; updateHud();
+    openDialog({ name: 'Barro', title: 'Tukang kayu', spec: 'barro', pages: [`${C.TYPES[k].name}! Baik, Presiden. Patok sudah siap, bahan akan datang sore ini.`, C.isQueued(S, S.builds[bid]) ? 'Semua tim sedang sibuk, jadi bangunan ini menunggu giliran. Tambah pekerja kalau mau lebih cepat.' : 'Kami mulai sekarang juga. Lihat saja, beberapa menit lagi sudah berdiri.'] });
   }
   function updateBuild() {
     const n = C.PLOT_ALLOW[C.plotById(build.id).kind].length;
@@ -237,23 +237,24 @@
     if (it.plot) return plotAction(it.plot);
     if (it.npc) { const n = npcs.find(q => q.def.id === it.npc); if (n) return talkTo(n); return openDialog({ pages: ['Tidak ada siapa-siapa di sini sekarang.'] }); }
     if (it.act === 'office') return openOffice();
-    if (it.act === 'sleep') return openDialog({ pages: ['Tempat tidurmu. Seprainya baru dicuci dan berbau sabun Greenleaf.', 'Tidur sampai pagi? Permainan akan disimpan.'], choices: [{ label: 'Tidur', act: 'sleep' }, { label: 'Belum', act: null }] });
+    if (it.act === 'sleep') return openDialog({ pages: ['Tempat tidurmu. Seprainya baru dicuci dan berbau sabun Greenleaf.', 'Hari berganti sendiri tengah malam, jadi kamu tidak wajib tidur. Mau istirahat dan langsung lompat ke pagi berikutnya?'], choices: [{ label: 'Istirahat sampai pagi', act: 'sleep' }, { label: 'Tidak', act: null }] });
     if (it.text) return openDialog({ pages: it.text });
   }
 
   /* ---------- tidur & ganti hari ---------- */
-  function sleep(passedOut) {
-    fadeTo(() => {
+  /* hari berganti sendiri pukul 24:00 (gaya Metropolismania); tempat tidur hanya untuk melompat ke pagi */
+  function newDay(fromBed) {
+    const go = () => {
       D.advanceDay(S, rand);
-      S.minutes = passedOut ? 8 * 60 : 6 * 60;
-      if (passedOut) { S.stats.moral = Math.max(0, S.stats.moral - 1); }
-      enterMap('balai', 100, 196, 'down');
+      S.minutes = 6 * 60;
+      C.decorate(map, S); lastPeriod = period(S.minutes); spawnNpcs(lastPeriod);
       hudKey = ''; updateHud();
       saveGame(true);
-      if (passedOut) openDialog({ name: 'Elin Marrow', title: 'Juru tulis Balai', spec: 'elin', pages: ['Presiden! Syukurlah. Penjaga menemukan Anda tertidur di luar tengah malam dan menggotong Anda ke sini.', 'Tolong jangan begitu lagi. Republik ini baru punya satu presiden.'] });
-      else openDialog({ pages: [D.SEASONS[S.season] + ', hari ke-' + S.day + '. Pagi yang dingin di Brennhold.', 'Laporan baru sudah menunggu di meja kerja.'] });
-    });
+      toast(D.SEASONS[S.season] + ', Hari ' + S.day + ' · laporan baru di meja kerja', 3.2);
+    };
+    if (fromBed) fadeTo(go); else go();
   }
+  function sleep() { newDay(true); }
 
   /* ---------- simpan / muat ---------- */
   function snapshotState() { if (!S) return null; if (map) { S.map = map.id; S.x = Math.round(player.x); S.y = Math.round(player.y); S.dir = player.dir; } return S; }
@@ -299,7 +300,7 @@
       const pr = C.PROJECTS[id], j = S.projects[id];
       let row;
       if (!j) row = `<span class="meta">${pr.cost} keping · ${pr.work} hari-kerja${id === 'dermagaSL' && S.flags.ooloHelp ? ' (dibantu Kaum Oolo: lebih cepat)' : ''}</span><button type="button" class="act" data-a="proj:${id}" ${S.stats.kas < pr.cost ? 'disabled' : ''}>Mulai proyek</button>`;
-      else if (!j.done) row = `<div class="prog"><i style="width:${pct(j)}%"></i></div><span class="meta">${pct(j)}% · sekitar ${C.daysLeft(S, j)} hari lagi</span>`;
+      else if (!j.done) row = `<div class="prog"><i style="width:${pct(j)}%"></i></div><span class="meta">${pct(j)}% · ${C.etaText(S, j)}</span>`;
       else row = `<span class="tag">Selesai</span>`;
       h += `<div class="item"><h3>${pr.name}</h3><p>${pr.desc}</p><div class="row">${row}</div></div>`;
     }
@@ -308,7 +309,7 @@
     if (!builds.length) h += `<p class="empty">Belum ada. Datangi petak kosong atau rumah terbakar di Pemukiman Selatan untuk mulai membangun.</p>`;
     for (const k of builds) {
       const b = S.builds[k], t = C.TYPES[b.type], p = C.plotById(k), g = S.residents[k];
-      h += `<div class="item"><h3>${t.name}</h3><p>${p.label}${b.done ? (g ? ` · dihuni rombongan ${g.leader} (${g.size} jiwa)` : t.fits.length ? ' · menunggu penghuni' : ' · berfungsi') : ''}</p><div class="row">${b.done ? '<span class="tag">Selesai</span>' : `<div class="prog"><i style="width:${pct(b)}%"></i></div><span class="meta">${pct(b)}% · sekitar ${C.daysLeft(S, b)} hari lagi</span>`}</div></div>`;
+      h += `<div class="item"><h3>${t.name}</h3><p>${p.label}${b.done ? (g ? ` · dihuni rombongan ${g.leader} (${g.size} jiwa)` : t.fits.length ? ' · menunggu penghuni' : ' · berfungsi') : ''}</p><div class="row">${b.done ? '<span class="tag">Selesai</span>' : `<div class="prog"><i style="width:${pct(b)}%"></i></div><span class="meta">${pct(b)}% · ${C.etaText(S, b)}</span>`}</div></div>`;
     }
     h += `<p class="sec-title">Rombongan menunggu tempat tinggal</p>`;
     h += S.waiting.length ? S.waiting.map(g => `<div class="item"><h3>${g.leader} · ${g.origin}</h3><p>${g.size} jiwa, ${g.kind}. Butuh ${g.kind === 'nelayan' ? 'Rumah Panggung' : g.kind === 'pedagang' ? 'Toko' : 'Rumah Warga'}. Menunggu ${C.absDay(S) - g.day} hari.</p></div>`).join('') : `<p class="empty">Tidak ada.</p>`;
@@ -446,7 +447,8 @@
       'Perang saudara yang menyusul meruntuhkan kerajaan itu. Dari abunya lahir Republik Varsena.',
       'Kamu, ' + S.name + ', yang memimpin perang kemerdekaan, kini menjadi Presiden pertamanya.',
       'Ini pagi pertamamu di Balai Republik. Perang sudah selesai. Pekerjaan yang sesungguhnya baru dimulai.',
-      'Berjalan: tombol panah atau WASD (tahan Shift untuk berlari). Bicara dan periksa: Z atau Spasi. Menu: X atau Esc.'
+      'Berjalan: tombol panah atau WASD (tahan Shift untuk berlari). Bicara dan periksa: Z atau Spasi. Menu: X atau Esc.',
+      'Hari berganti sendiri tengah malam, kira-kira setiap 4 menit. Bangunan dan proyek dikerjakan terus selama kamu bermain.'
     ] });
     else toast('Selamat datang kembali, Presiden ' + S.name);
   }
@@ -477,7 +479,10 @@
     updateNpcs(dt);
     // waktu
     S.minutes += dt * TIME_RATE;
-    if (S.minutes >= 24 * 60) { sleep(true); return; }
+    if (S.minutes >= 24 * 60) { newDay(false); return; }
+    const res = C.tick(S, dt, rand);
+    for (const t of res.events) toast(t, 3.4);
+    if (res.changed) { C.decorate(map, S); if (map.id === 'plaza' || map.id === 'kampung') spawnNpcs(period(S.minutes)); hudKey = ''; }
     const per = period(S.minutes);
     if (per !== lastPeriod) { lastPeriod = per; spawnNpcs(per); toast(PERIOD_LABEL[per] + ' tiba', 1.8); }
     updateHud();

@@ -8,10 +8,10 @@ window.V = window.V || {};
 
   /* ---------- jenis bangunan ---------- */
   const TYPES = {
-    rumah: { name: 'Rumah Warga', cost: 250, work: 12, fits: ['petani', 'tukang'], desc: 'Tempat tinggal satu rombongan petani atau tukang, sekitar 30 jiwa.' },
-    panggung: { name: 'Rumah Panggung', cost: 200, work: 10, fits: ['nelayan'], desc: 'Rumah di atas tiang di tepi danau untuk nelayan Kaum Amfibi. Menambah tangkapan ikan untuk kota.' },
-    toko: { name: 'Toko dan Rumah Pedagang', cost: 400, work: 16, fits: ['pedagang'], desc: 'Lantai bawah toko, lantai atas tempat tinggal. Menambah pajak harian.' },
-    lumbung: { name: 'Lumbung Pangan', cost: 300, work: 12, fits: [], desc: 'Gudang pangan yang kering dan terkunci. Cadangan pangan lebih awet dan lebih sulit dicuri.' }
+    rumah: { name: 'Rumah Warga', cost: 250, work: 180, fits: ['petani', 'tukang'], desc: 'Tempat tinggal satu rombongan petani atau tukang, sekitar 30 jiwa.' },
+    panggung: { name: 'Rumah Panggung', cost: 200, work: 180, fits: ['nelayan'], desc: 'Rumah di atas tiang di tepi danau untuk nelayan Kaum Amfibi. Menambah tangkapan ikan untuk kota.' },
+    toko: { name: 'Toko dan Rumah Pedagang', cost: 400, work: 300, fits: ['pedagang'], desc: 'Lantai bawah toko, lantai atas tempat tinggal. Menambah pajak harian.' },
+    lumbung: { name: 'Lumbung Pangan', cost: 300, work: 210, fits: [], desc: 'Gudang pangan yang kering dan terkunci. Cadangan pangan lebih awet dan lebih sulit dicuri.' }
   };
   const PLOT_ALLOW = { empty: ['rumah', 'toko', 'lumbung'], lake: ['panggung'], burnt: ['rumah', 'toko'] };
   const PLOTS = {
@@ -28,8 +28,8 @@ window.V = window.V || {};
 
   /* ---------- proyek negara ---------- */
   const PROJECTS = {
-    jalurDesa: { name: 'Buka Kembali Jalur Desa Barat', cost: 350, work: 16, desc: 'Perbaiki jembatan Sungai Tessin dan pasang pos jaga di jalan desa barat Brennhold. Hasil kebun dan ternak desa bisa sampai ke pasar, dan dijual ke Gold Mines.' },
-    dermagaSL: { name: 'Dermaga dan Rumah Asap Ikan South Lake', cost: 300, work: 20, desc: 'Perbaiki dermaga desa nelayan di tepi selatan danau dan bangun rumah pengasapan, supaya ikan tahan berhari-hari dan bisa dikirim sampai Gold Mines.' }
+    jalurDesa: { name: 'Buka Kembali Jalur Desa Barat', cost: 350, work: 300, desc: 'Perbaiki jembatan Sungai Tessin dan pasang pos jaga di jalan desa barat Brennhold. Hasil kebun dan ternak desa bisa sampai ke pasar, dan dijual ke Gold Mines.' },
+    dermagaSL: { name: 'Dermaga dan Rumah Asap Ikan South Lake', cost: 300, work: 360, desc: 'Perbaiki dermaga desa nelayan di tepi selatan danau dan bangun rumah pengasapan, supaya ikan tahan berhari-hari dan bisa dikirim sampai Gold Mines.' }
   };
   /* ---------- pilihan perjanjian dengan Gold Mines ---------- */
   const DEALS = [
@@ -76,28 +76,34 @@ window.V = window.V || {};
     s.letters = s.letters || { isam: 'none' };
     s.deal = s.deal || null; s.gm = s.gm == null ? 50 : s.gm;
     s.southLake = s.southLake || 0; s.dealIncome = s.dealIncome || 0;
-    s.nextGroup = s.nextGroup || 1;
+    s.nextGroup = s.nextGroup || 1; s.jobSeq = s.jobSeq || 1;
+    s.today = s.today || []; s.arriveT = s.arriveT || 0;
+    // simpanan lama (kerja dalam "hari-kerja") diubah ke detik nyata
+    const fix = j => { if (j && !j.done && !j.sec) { const f = j.prog / j.work; j.work = 180; j.prog = f * 180; j.sec = true; j.order = j.order || s.jobSeq++; } };
+    for (const k in s.builds) fix(s.builds[k]); for (const k in s.projects) fix(s.projects[k]);
     if (!s.waiting.length && !s.flags.seeded) { s.flags.seeded = true; s.waiting.push(newGroup(s, A.rng(99), 'petani'), newGroup(s, A.rng(7), 'tukang')); }
     return s;
   }
+  const absDay = s => s.day + s.season * 30 + (s.year - 1) * 120;
   function newGroup(s, rand, kind) {
     if (!kind) { const w = [['petani', s.projects.jalurDesa && s.projects.jalurDesa.done ? 5 : 3], ['tukang', 2], ['nelayan', s.projects.dermagaSL && s.projects.dermagaSL.done ? 3 : 1.5], ['pedagang', s.deal ? 2.5 : 1]]; let t = w.reduce((a, b) => a + b[1], 0) * rand(); kind = w.find(x => (t -= x[1]) < 0)[0]; }
     const id = s.nextGroup++; const pick = a => a[Math.floor(rand() * a.length)];
-    return { id, kind, origin: pick(ORIGIN[kind]), leader: pick(LEADERS[kind]), size: 18 + Math.floor(rand() * 22), day: s.day + (s.season * 30), seed: id * 97 + 13 };
+    return { id, kind, origin: pick(ORIGIN[kind]), leader: pick(LEADERS[kind]), size: 18 + Math.floor(rand() * 22), day: absDay(s), seed: id * 97 + 13 };
   }
-  const absDay = s => s.day + s.season * 30 + (s.year - 1) * 120;
 
-  /* ---------- tindakan pemain ---------- */
+  /* ---------- tindakan pemain ----------
+     Lama pembangunan dihitung dalam detik nyata (seperti Metropolismania):
+     dengan 6 pekerja, rumah selesai sekitar 3 menit, toko sekitar 5 menit. */
   function canBuild(s, plotId, type) { const p = plotById(plotId); const c = costOf(p, type); return s.stats.kas >= c.cost && !s.builds[plotId]; }
   function startBuild(s, plotId, type) {
     const p = plotById(plotId), c = costOf(p, type);
     if (s.stats.kas < c.cost || s.builds[plotId]) return false;
-    s.stats.kas -= c.cost; s.builds[plotId] = { type, work: c.work, prog: 0, done: false };
+    s.stats.kas -= c.cost; s.builds[plotId] = { type, work: c.work, prog: 0, done: false, sec: true, order: s.jobSeq++ };
     return true;
   }
   function startProject(s, id) {
     const pr = PROJECTS[id]; if (s.projects[id] || s.stats.kas < pr.cost) return false;
-    s.stats.kas -= pr.cost; s.projects[id] = { work: id === 'dermagaSL' && s.flags.ooloHelp ? Math.round(pr.work / 2) : pr.work, prog: 0, done: false };
+    s.stats.kas -= pr.cost; s.projects[id] = { work: id === 'dermagaSL' && s.flags.ooloHelp ? Math.round(pr.work / 2) : pr.work, prog: 0, done: false, sec: true, order: s.jobSeq++ };
     return true;
   }
   function signDeal(s, id, byAldric) {
@@ -107,36 +113,75 @@ window.V = window.V || {};
     s.stats.kepercayaan = Math.max(0, Math.min(100, s.stats.kepercayaan + d.kep));
   }
   function workforce(s) { return s.workers + (s.hire ? 4 : 0) + (s.flags.hassanHelp ? 4 : 0); }
+  const teams = s => Math.max(1, Math.floor(workforce(s) / 3));
+  const speed = s => 1 + (workforce(s) - 6) * .06;
   function activeJobs(s) {
     const j = [];
     for (const k in s.builds) if (!s.builds[k].done) j.push(s.builds[k]);
     for (const k in s.projects) if (!s.projects[k].done) j.push(s.projects[k]);
-    return j;
+    return j.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  function daysLeft(s, job) { const jobs = Math.max(1, activeJobs(s).length); const per = workforce(s) / jobs; return Math.max(1, Math.ceil((job.work - job.prog) / per)); }
+  function isQueued(s, job) { return activeJobs(s).indexOf(job) >= teams(s); }
+  function minutesLeft(s, job) { return Math.max(1, Math.ceil((job.work - job.prog) / speed(s) / 60)); }
+  function etaText(s, job) {
+    if (isQueued(s, job)) return 'menunggu tim kerja kosong';
+    const m = minutesLeft(s, job); return m <= 1 ? 'kurang dari 1 menit lagi' : `sekitar ${m} menit lagi`;
+  }
 
-  /* ---------- proses harian (dipanggil saat tidur) ---------- */
+  /* ---------- proses berjalan (setiap frame saat bermain) ---------- */
+  function moveIn(s, events) {
+    const st = s.stats;
+    for (const k in s.builds) {
+      const b = s.builds[k]; if (!b.done || s.residents[k] || !TYPES[b.type].fits.length) continue;
+      const gi = s.waiting.findIndex(g => TYPES[b.type].fits.includes(g.kind));
+      if (gi < 0) continue;
+      const g = s.waiting.splice(gi, 1)[0]; s.residents[k] = g;
+      st.populasi += g.size; st.moral = Math.min(100, st.moral + 2); st.stabilitas = Math.min(100, st.stabilitas + 1);
+      if (g.kind === 'tukang') s.workers += 2;
+      const t = `Rombongan ${g.leader} dari ${g.origin} (${g.size} jiwa) pindah ke ${TYPES[b.type].name}.` + (g.kind === 'tukang' ? ' Dua tukang langsung ikut membangun.' : '');
+      events.push(t); s.today.push(t);
+    }
+  }
+  function tick(s, dt, rand) {
+    const events = [], st = s.stats;
+    const jobs = activeJobs(s), n = Math.min(teams(s), jobs.length), sp = speed(s);
+    let changed = false;
+    for (let i = 0; i < n; i++) {
+      const j = jobs[i]; j.prog += dt * sp;
+      const step = Math.floor(j.prog / j.work * 4); if (step !== j.step) { j.step = step; changed = true; }
+      if (j.prog >= j.work) {
+        j.done = true; changed = true;
+        let t;
+        const bk = Object.keys(s.builds).find(k => s.builds[k] === j);
+        if (bk) { t = `${TYPES[j.type].name} di ${plotById(bk).label.toLowerCase()} selesai dibangun!`; st.moral = Math.min(100, st.moral + 2); }
+        else {
+          const pk = Object.keys(s.projects).find(k => s.projects[k] === j);
+          if (pk === 'jalurDesa') { t = 'Jalur desa barat dibuka kembali! Gerobak sayur dan domba mulai masuk ke pasar Brennhold.'; st.stabilitas = Math.min(100, st.stabilitas + 2); st.pangan += 2; }
+          else { t = 'Dermaga dan rumah asap ikan South Lake selesai! Walikota Frederick mengirim ikan asap terbesar sebagai ucapan terima kasih.'; st.kepercayaan = Math.min(100, st.kepercayaan + 2); }
+        }
+        events.push(t); s.today.push(t);
+      }
+    }
+    // rombongan baru datang sepanjang hari
+    s.arriveT += dt;
+    if (s.arriveT >= 45) {
+      s.arriveT = 0;
+      const chance = .3 + st.moral / 250 + (s.projects.jalurDesa && s.projects.jalurDesa.done ? .15 : 0);
+      if (s.waiting.length < 5 && rand() < chance) { const g = newGroup(s, rand); s.waiting.push(g); const t = `Rombongan ${g.leader} dari ${g.origin} (${g.size} jiwa, ${g.kind}) tiba di alun-alun.`; events.push(t); s.today.push(t); changed = true; }
+    }
+    const before = s.waiting.length; moveIn(s, events); if (s.waiting.length !== before) changed = true;
+    return { events, changed };
+  }
+
+  /* ---------- pergantian hari (otomatis pukul 24:00) ---------- */
   function daily(s, rand) {
     ensure(s);
-    const notes = [], st = s.stats, today = absDay(s);
-    // pekerja
-    if (s.hire) { st.kas -= 32; }
-    const jobs = activeJobs(s), per = jobs.length ? workforce(s) / jobs.length : 0;
-    for (const k in s.builds) {
-      const b = s.builds[k]; if (b.done) continue;
-      b.prog += per;
-      const p = plotById(k), t = TYPES[b.type];
-      if (b.prog >= b.work) { b.done = true; notes.push(`${t.name} di ${p.label.toLowerCase()} selesai dibangun. Barro dan para pekerja merayakannya dengan sup kacang.`); st.moral = Math.min(100, st.moral + 2); }
-      else notes.push(`Pembangunan ${t.name} (${p.label.toLowerCase()}): ${Math.round(b.prog / b.work * 100)}%.`);
-    }
-    for (const k in s.projects) {
-      const pr = s.projects[k]; if (pr.done) continue;
-      pr.prog += per;
-      if (pr.prog >= pr.work) {
-        pr.done = true;
-        if (k === 'jalurDesa') { notes.push('Jalur desa barat dibuka kembali. Gerobak sayur dan domba mulai masuk ke pasar Brennhold.'); st.stabilitas = Math.min(100, st.stabilitas + 2); st.pangan += 2; }
-        else { notes.push('Dermaga dan rumah asap ikan di South Lake selesai. Walikota Frederick mengirim seekor ikan asap terbesar sebagai ucapan terima kasih.'); st.kepercayaan = Math.min(100, st.kepercayaan + 2); }
-      } else notes.push(`Proyek ${PROJECTS[k].name}: ${Math.round(pr.prog / pr.work * 100)}%.`);
+    const notes = s.today.slice(), st = s.stats, today = absDay(s);
+    s.today = [];
+    if (s.hire) st.kas -= 32;
+    for (const j of activeJobs(s)) {
+      const k = Object.keys(s.builds).find(x => s.builds[x] === j);
+      notes.push(`${k ? TYPES[j.type].name : PROJECTS[Object.keys(s.projects).find(x => s.projects[x] === j)].name}: ${Math.min(99, Math.round(j.prog / j.work * 100))}% (${etaText(s, j)}).`);
     }
     // surat Isam
     if (s.letters.isam === 'none' && today >= 1) { s.letters.isam = 'received'; notes.unshift('Surat dari Walikota Isam (Gold Mines): harga roti dan ikan di Gold Mines naik tiga kali lipat. Ia menawarkan kerja sama. Lihat di halaman Surat.'); }
@@ -152,19 +197,8 @@ window.V = window.V || {};
       if (desa) cap += Math.round(s.deal.daily * .5 * (.9 + rand() * .2));
       if (ikan) { const f = Math.round(s.deal.daily * .5 * (.9 + rand() * .2)); cap += Math.round(f * .4); sl += f - Math.round(f * .4); }
       if (cap || sl) { st.kas += cap; s.southLake += sl; s.dealIncome += cap; notes.push(`Penjualan pangan ke Gold Mines: kas ibu kota +${cap} keping${sl ? `, South Lake +${sl} keping` : ''}.`); }
-      else if (today % 3 === 0) notes.push('Perjanjian dengan Gold Mines sudah ditandatangani, tapi pangan belum bisa dikirim. Jalur desa barat dan dermaga South Lake masih rusak.');
+      else if (today % 2 === 0) notes.push('Perjanjian dengan Gold Mines sudah ditandatangani, tapi pangan belum bisa dikirim. Jalur desa barat dan dermaga South Lake masih rusak.');
       if (s.deal.id === 'tinggi' && today % 5 === 0) { notes.push('Pedagang Gold Mines mengeluh soal harga pangan dari Brennhold. Hubungan dengan Gold Mines memburuk.'); s.gm = Math.max(0, s.gm - 2); }
-    }
-    // penghuni pindah masuk
-    for (const k in s.builds) {
-      const b = s.builds[k]; if (!b.done || s.residents[k] || !TYPES[b.type].fits.length) continue;
-      const gi = s.waiting.findIndex(g => TYPES[b.type].fits.includes(g.kind));
-      if (gi >= 0) {
-        const g = s.waiting.splice(gi, 1)[0]; s.residents[k] = g;
-        st.populasi += g.size; st.moral = Math.min(100, st.moral + 2); st.stabilitas = Math.min(100, st.stabilitas + 1);
-        notes.push(`Rombongan ${g.leader} dari ${g.origin} (${g.size} jiwa) pindah ke ${TYPES[b.type].name} baru.` + (g.kind === 'tukang' ? ' Dua tukang di antaranya langsung ikut membangun.' : ''));
-        if (g.kind === 'tukang') s.workers += 2;
-      }
     }
     // efek bangunan
     let fish = 0, shop = 0, barn = false;
@@ -172,10 +206,8 @@ window.V = window.V || {};
     if (fish) st.pangan += fish;
     if (shop) st.kas += shop * 15;
     if (barn && rand() < .5) st.pangan += 1;
-    // pendatang baru & yang pergi
-    const chance = .35 + st.moral / 200 + (s.projects.jalurDesa && s.projects.jalurDesa.done ? .2 : 0);
-    if (s.waiting.length < 5 && rand() < chance) { const g = newGroup(s, rand); s.waiting.push(g); notes.push(`Rombongan ${g.leader} dari ${g.origin} (${g.size} jiwa, ${g.kind}) tiba di alun-alun dan menunggu tempat tinggal.`); }
-    for (let i = s.waiting.length - 1; i >= 0; i--) { const g = s.waiting[i]; if (today - g.day > 5) { s.waiting.splice(i, 1); st.moral = Math.max(0, st.moral - 2); notes.push(`Rombongan ${g.leader} dari ${g.origin} pergi ke Twin River karena tidak mendapat tempat tinggal.`); } }
+    // rombongan yang terlalu lama menunggu pergi
+    for (let i = s.waiting.length - 1; i >= 0; i--) { const g = s.waiting[i]; if (today - g.day >= 2) { s.waiting.splice(i, 1); st.moral = Math.max(0, st.moral - 2); notes.push(`Rombongan ${g.leader} dari ${g.origin} pergi ke Twin River karena tidak mendapat tempat tinggal.`); } }
     return notes;
   }
 
@@ -288,8 +320,8 @@ window.V = window.V || {};
       return [l[(s.day + g.id) % l.length]];
     }
     const waited = absDay(s) - g.day;
-    return [`Kami rombongan dari ${g.origin}, ${g.size} jiwa. Saya ${g.leader}, yang memimpin.`, WISH[g.kind], waited >= 3 ? `Kami sudah menunggu ${waited} hari, Presiden. Kalau tidak ada tempat, kami terpaksa pergi ke Twin River.` : 'Untuk sementara kami tidur di serambi Balai. Penjaga Anda baik sekali.'];
+    return [`Kami rombongan dari ${g.origin}, ${g.size} jiwa. Saya ${g.leader}, yang memimpin.`, WISH[g.kind], waited >= 1 ? 'Kami sudah menunggu sejak kemarin, Presiden. Kalau besok belum ada tempat, kami terpaksa pergi ke Twin River.' : 'Untuk sementara kami tidur di serambi Balai. Penjaga Anda baik sekali.'];
   }
 
-  V.city = { TYPES, PLOTS, PLOT_ALLOW, PROJECTS, DEALS, plotById, costOf, ensure, canBuild, startBuild, startProject, signDeal, workforce, activeJobs, daysLeft, daily, decorate, residentNpcs, waitingNpcs, groupSpec, groupTalk, absDay };
+  V.city = { tick, etaText, isQueued, minutesLeft, teams, TYPES, PLOTS, PLOT_ALLOW, PROJECTS, DEALS, plotById, costOf, ensure, canBuild, startBuild, startProject, signDeal, workforce, activeJobs, daily, decorate, residentNpcs, waitingNpcs, groupSpec, groupTalk, absDay };
 })(window.V);
