@@ -159,22 +159,15 @@ Kedua jalur memberi pengalaman berbeda: Aldric berarti **akurat tapi berbahaya k
 - Rombongan pendatang tiba sepanjang hari dan pindah masuk begitu ada bangunan yang cocok. Rombongan yang tidak mendapat tempat dalam 2 hari pergi ke Twin River.
 - **4 musim**, masing-masing 30 hari.
 
-### 5.2 Dua mode bermain
+### 5.2 Lapangan dulu, kantor jarang (gaya Metropolismania)
+Hampir semua hal dilakukan di lapangan:
+- **Membangun** langsung di petak.
+- **Buku Saku Presiden** (tombol C) bisa dibuka di mana saja: laporan harian, pembangunan dan proyek (bisa dimulai dari sini), surat, dan petunjuk.
+- **Kurir** mengantar surat penting langsung ke pemain di mana pun berada. Pemain bisa langsung menjawab, atau menunda dan menjawab dari Buku Saku.
+- **Petunjuk dari warga** (bertanda **!** di atas kepala) membuka pilihan yang lebih baik: info harga dari Rinka membuka perjanjian "Kemitraan", kayu Greenleaf dari Barro membuat bangunan 20% lebih murah, penyeberangan Tessin dari Pak Dirun mempercepat proyek jalur desa.
+- **Navigasi:** panah penunjuk ke bangunan yang baru selesai, dan perjalanan cepat (sekitar 30 menit permainan) lewat menu.
 
-**Di lapangan** (gaya life sim, jalan-jalan bebas)
-- Jalan-jalan di Brennhold dan kota-kota lain.
-- Ngobrol dengan warga dan membangun hubungan.
-- Merekrut tokoh lewat quest dan syarat khusus.
-- Inspeksi proyek, selidiki kasus, hadiri festival.
-- Mendapat **informasi asli** yang tidak muncul di laporan.
-
-**Di kantor** (gaya menu dan keputusan)
-- Membaca laporan harian dari tiap kota.
-- Mengeluarkan dekrit dan kebijakan.
-- Mengatur anggaran.
-- Mengangkat dan memberhentikan pejabat.
-- Menyetujui proyek bangunan dan penemuan.
-- Menerima utusan dan diplomat.
+**Meja kerja di Balai** hanya untuk keputusan besar: delegasi kepada sekretaris dan gambaran seluruh negeri (kemudian: kebijakan dan rapat pejabat).
 
 ### 5.3 Sistem sekretaris
 Pemain bisa menyerahkan tugas rutin ke sekretaris:

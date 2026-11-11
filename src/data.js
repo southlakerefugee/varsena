@@ -14,6 +14,7 @@ window.V = window.V || {};
     barro: { hm: 1, wm: 1.1, skin: '#c99068', hair: '#1e1a18', hairStyle: 'short', eye: '#2a1e16', outfit: '#6f7f5a', vest: '#8a6446', pants: '#3a3a40', shoes: '#2a2018', scarf: '#d0b070' },
     marta: { hm: .84, wm: .95, skin: '#e2b896', hair: '#c8c4bc', hairStyle: 'bun', eye: '#4a3a2a', outfit: '#5a4a6a', vest: '#3a3044', skirt: '#3a3044', pants: '#3a3044', shoes: '#2a2018', wrinkles: true },
     pipin: { hm: .66, wm: .82, skin: '#f0c49c', hair: '#c88a3a', hairStyle: 'short', eye: '#3a5a2a', outfit: '#c9a24a', pants: '#5a4a3a', shoes: '#4a2e1e', mouth: 'smile' },
+    kurir: { hm: .9, wm: .9, skin: '#e8b890', hair: '#6a4a2a', hairStyle: 'hat', hat: '#24605e', eye: '#2a1e16', outfit: '#d0a43e', pants: '#3a3340', shoes: '#4a2e1e', scarf: '#24605e', mouth: 'smile' },
     penjaga: { hm: 1, wm: 1.08, skin: '#d8a882', hair: '#3a2a1e', hairStyle: 'short', neat: true, eye: '#2a1e16', outfit: '#6f7a86', armor: true, sleeve: '#24605e', pants: '#2f3a44', shoes: '#2a2018', cape: '#24605e' }
   };
 
@@ -30,8 +31,8 @@ window.V = window.V || {};
           return { pages: [
             `Presiden ${s.name}. Kau terlambat dua menit dari jadwal yang kubuat. Untuk hari pertama, akan kuanggap itu kebiasaan lama dari masa perang.`,
             'Perang sudah selesai. Musuh kita sekarang bukan pasukan Hal, melainkan gudang yang kosong, rumah yang hangus, dan orang-orang yang belum mau pulang.',
-            'Meja kerja di belakangku milikmu. Setiap pagi aku menaruh laporan di sana: kas, pangan, populasi, dan hal-hal yang menurutku perlu kau ketahui.',
-            'Kau juga bisa menentukan seberapa banyak urusan yang kau serahkan padaku. Kuingatkan saja: aku akan memilih jalan yang paling efektif, bukan yang paling disukai rakyat.'
+            'Satu nasihat: jangan terkurung di ruangan ini. Bawa Buku Saku yang Elin siapkan (tekan C), dan putuskan sebagian besar urusan di jalan. Kurir akan mengantar surat penting langsung kepadamu.', 'Meja kerja di belakangku hanya untuk hal-hal besar: arah negara dan seberapa banyak urusan yang kau serahkan padaku.',
+            'Kuingatkan saja: kalau kau menyerahkan banyak urusan padaku, aku akan memilih jalan yang paling efektif, bukan yang paling disukai rakyat.'
           ], choices: [{ label: 'Buka meja kerja', act: 'office' }, { label: 'Nanti saja', act: null }] };
         }
         const lines = {
@@ -52,7 +53,8 @@ window.V = window.V || {};
           return { pages: [
             'Ah! Presiden! Maaf, saya Elin Marrow, juru tulis baru di Balai. Saya dari Greenleaf.',
             'Kamar Anda ada di sisi barat, lewat pintu kiri. Tempat tidurnya sudah saya rapikan. Kalau Anda tidur di sana, saya akan mencatat semua kejadian hari itu ke buku besar.',
-            'Ruang kerja ada di sisi timur. Tuan Aldric biasanya di sana. Dia... agak menakutkan. Tapi kata orang, dia tidak pernah salah hitung.'
+            'Ruang kerja ada di sisi timur. Tuan Aldric biasanya di sana. Dia... agak menakutkan. Tapi kata orang, dia tidak pernah salah hitung.',
+            'Oh, dan ini untuk Anda: Buku Saku Presiden. Laporan harian, pembangunan, surat, dan petunjuk dari warga saya salin ke sini setiap pagi, jadi Anda tidak perlu bolak-balik ke Balai. (Tekan C untuk membukanya.)'
           ] };
         }
         const l = {
@@ -64,7 +66,7 @@ window.V = window.V || {};
       }
     },
     {
-      id: 'hassan', name: 'Jenderal Hassan', title: 'Kastil Lakeward', spec: 'hassan',
+      id: 'hassan', name: 'Jenderal Hassan', title: 'Kastil Lakeward', spec: 'hassan', news: s => !s.flags.metHassan || !s.flags.hassanHelp,
       at: { pagi: { map: 'plaza', x: 430, y: 330, dir: 'left' }, siang: { map: 'plaza', x: 430, y: 330, dir: 'left' }, sore: { map: 'plaza', x: 76, y: 70, dir: 'down' }, malam: null },
       talk(s) {
         if (!s.flags.metHassan) {
@@ -87,7 +89,7 @@ window.V = window.V || {};
       }
     },
     {
-      id: 'rinka', name: 'Rinka', title: 'Pedagang dari Twin River', spec: 'rinka',
+      id: 'rinka', name: 'Rinka', title: 'Pedagang dari Twin River', spec: 'rinka', news: s => !s.flags.metRinka || (s.flags.isamLetter && !s.flags.clue_hargaGM),
       at: { pagi: { map: 'plaza', x: 600, y: 268, dir: 'down' }, siang: { map: 'plaza', x: 600, y: 268, dir: 'down' }, sore: { map: 'plaza', x: 600, y: 268, dir: 'down' }, malam: null },
       talk(s) {
         if (!s.flags.metRinka) {
@@ -98,6 +100,11 @@ window.V = window.V || {};
             'Satu kabar gratis, karena kau pelanggan baru: ada yang membeli karung gandum dalam jumlah besar di pasar gelap. Gandum dengan cap gudang republik.'
           ] };
         }
+        if (s.flags.isamLetter && !s.flags.clue_hargaGM) { s.flags.clue_hargaGM = true; return { pages: [
+          'Surat dari Isam? Hah, kabar cepat sampai ke pasar. Dengar baik-baik, Presiden, ini gratis karena aku suka republik ini.',
+          'Di Gold Mines, sekarung gandum dijual 90 keping. Tahun lalu cuma 30. Dan kas kota Isam penuh: mereka baru membuka urat perak di Lembah Kessit.',
+          'Jadi jangan minta terlalu sedikit, tapi jangan juga memeras. Tawarkan kemitraan. Isam itu pedagang; dia menghargai lawan bicara yang tahu harga.'
+        ] }; }
         const l = ['Garam dari Islania, jarum dari Gold Mines, kain dari Greenleaf. Lengkap, kecuali pembeli.', 'Di Twin River, kaum Amfibi, Rubah, dan manusia dulu tidak saling menyapa. Perang mengajari kami bahwa tetangga lebih berguna daripada musuh.', 'Kabar dari jalan: penjaga gudang timur sering mabuk. Bukan urusanku, tentu saja.', 'Di Gold Mines, sekarung gandum dihargai seperti sepasang sepatu kulit. Para penambang punya emas tapi perutnya kosong. Siapa yang bisa mengirim pangan ke sana akan kaya.'];
         return { pages: [l[s.day % l.length]] };
       }
@@ -135,7 +142,7 @@ window.V = window.V || {};
       }
     },
     {
-      id: 'barro', name: 'Barro', title: 'Tukang kayu', spec: 'barro',
+      id: 'barro', name: 'Barro', title: 'Tukang kayu', spec: 'barro', news: s => !s.flags.metBarro || !s.flags.clue_kayu,
       at: { pagi: { map: 'kampung', x: 262, y: 222, dir: 'up' }, siang: { map: 'kampung', x: 262, y: 222, dir: 'up' }, sore: { map: 'kampung', x: 300, y: 240, dir: 'left' }, malam: null },
       talk(s) {
         if (!s.flags.metBarro) {
@@ -146,12 +153,16 @@ window.V = window.V || {};
             'Kalau ada arsitek di republik ini, cari dia, Presiden. Dengan satu arsitek dan sepuluh orang sepertiku, petak-petak kosong itu bisa jadi rumah sebelum musim dingin.'
           ] };
         }
+        if (!s.flags.clue_kayu) { s.flags.clue_kayu = true; return { pages: [
+          'Presiden, ada kabar bagus. Para penebang yang mengungsi sudah pulang ke hutan Greenleaf. Badai musim lalu menumbangkan ratusan pohon, dan mereka menjual kayunya murah.',
+          'Aku kenal mandor mereka. Kalau kita ambil kayu dari sana, setiap bangunan jadi jauh lebih murah.'
+        ] }; }
         const l = ['Petak-petak sudah kupatok. Datangi petaknya, Presiden, dan katakan mau dibangun apa. Asal ada uang, beberapa menit kemudian rumahnya sudah berdiri.', 'Petak di sebelah sana sudah kupatok. Tinggal izin dan bahan.', 'Rumah ini dulu milik keluarga penjahit. Kalau mereka pulang, aku ingin mereka menemukan rumah, bukan abu.', 'Tanganku gatal. Tukang tanpa kayu itu seperti prajurit tanpa pedang.'];
         return { pages: [l[s.day % l.length]] };
       }
     },
     {
-      id: 'dirun', name: 'Pak Dirun', title: 'Petani', spec: 'dirun',
+      id: 'dirun', name: 'Pak Dirun', title: 'Petani', spec: 'dirun', news: s => !s.flags.metDirun || !s.flags.clue_tessin,
       at: { pagi: { map: 'kampung', x: 560, y: 360, dir: 'down', wander: 50 }, siang: { map: 'kampung', x: 620, y: 380, dir: 'left', wander: 50 }, sore: { map: 'kampung', x: 470, y: 296, dir: 'down' }, malam: null },
       talk(s) {
         if (!s.flags.metDirun) {
@@ -162,12 +173,16 @@ window.V = window.V || {};
             'Kalau ada lebih banyak tangan dan benih, Presiden, padang di luar tembok bisa jadi lumbung lagi.'
           ] };
         }
+        if (!s.flags.clue_tessin) { s.flags.clue_tessin = true; return { pages: [
+          'Presiden dengar soal jembatan Tessin yang runtuh? Orang kota pikir satu-satunya jalan ke desa barat lewat jembatan itu.',
+          'Kami petani tahu ada penyeberangan dangkal di hulu, dekat penggilingan tua. Gerobak bisa lewat kalau dasar sungainya diberi batu. Jauh lebih murah daripada membangun jembatan baru.'
+        ] }; }
         const l = { pagi: ['Pagi adalah waktu terbaik untuk menyiram. Matahari belum galak.', 'Burung gagak makin berani. Mungkin aku butuh orang-orangan sawah berwajah Tuan Aldric.'], siang: ['Panas sekali. Tapi tanaman suka.', 'Di South Lake, satu keluarga bisa menggarap tiga petak. Di sini aku sendirian.'], sore: ['Hari ini cukup. Besok kita mulai lagi, seperti biasa.'] };
         const arr = l[s.period] || l.pagi; return { pages: [arr[s.day % arr.length]] };
       }
     },
     {
-      id: 'oolo', name: 'Oolo', title: 'Nelayan dari Twin River', spec: 'oolo',
+      id: 'oolo', name: 'Oolo', title: 'Nelayan dari Twin River', spec: 'oolo', news: s => !s.flags.metOolo || !s.flags.ooloHelp,
       at: { pagi: { map: 'kampung', x: 628, y: 520, dir: 'down' }, siang: { map: 'kampung', x: 628, y: 520, dir: 'down' }, sore: { map: 'kampung', x: 628, y: 520, dir: 'down' }, malam: { map: 'kampung', x: 628, y: 520, dir: 'down' } },
       talk(s) {
         if (!s.flags.metOolo) {

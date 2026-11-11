@@ -24,7 +24,16 @@ window.V = window.V || {};
     ]
   };
   const plotById = id => { for (const m in PLOTS) for (const p of PLOTS[m]) if (p.id === id) return Object.assign({ map: m }, p); return null; };
-  function costOf(plot, type) { const t = TYPES[type]; return plot.kind === 'burnt' ? { cost: Math.round(t.cost * .6), work: Math.round(t.work * .7) } : { cost: t.cost, work: t.work }; }
+  function costOf(plot, type, s) {
+    const t = TYPES[type], d = s && s.flags && s.flags.clue_kayu ? .8 : 1;
+    return plot.kind === 'burnt' ? { cost: Math.round(t.cost * .6 * d), work: Math.round(t.work * .7) } : { cost: Math.round(t.cost * d), work: t.work };
+  }
+  function projectCost(s, id) {
+    const pr = PROJECTS[id]; let cost = pr.cost, work = pr.work;
+    if (id === 'jalurDesa' && s.flags.clue_tessin) { cost -= 100; work = Math.round(work * .6); }
+    if (id === 'dermagaSL' && s.flags.ooloHelp) work = Math.round(work / 2);
+    return { cost, work };
+  }
 
   /* ---------- proyek negara ---------- */
   const PROJECTS = {
@@ -35,8 +44,18 @@ window.V = window.V || {};
   const DEALS = [
     { id: 'adil', name: 'Harga adil', advance: 300, daily: 40, gm: 15, kep: 2, text: 'Gold Mines membayar harga pasar yang wajar: uang muka 300 keping untuk pembangunan, lalu sekitar 40 keping per hari setelah jalur pangan dibuka.' },
     { id: 'muka', name: 'Dana pembangunan di muka', advance: 800, daily: 20, gm: 5, kep: 1, text: 'Minta 800 keping di muka untuk membangun ibu kota sekarang juga. Sebagai gantinya, harga harian lebih murah: sekitar 20 keping per hari.' },
+    { id: 'mitra', name: 'Kemitraan (berkat info harga dari Rinka)', needs: 'clue_hargaGM', advance: 500, daily: 55, gm: 12, kep: 2, text: 'Kamu tahu harga sebenarnya di pasar Gold Mines dan tahu Isam punya kas besar. Usulkan kemitraan: uang muka 500 keping, sekitar 55 keping per hari, dan Gold Mines merasa dihargai.' },
     { id: 'tinggi', name: 'Harga tinggi', advance: 200, daily: 70, gm: -20, kep: -1, text: 'Manfaatkan kebutuhan Gold Mines: sekitar 70 keping per hari. Isam terpaksa setuju, tapi dia tidak akan lupa.' }
   ];
+
+  /* ---------- petunjuk dari lapangan ---------- */
+  const CLUES = {
+    clue_hargaGM: { name: 'Harga pangan di Gold Mines', from: 'Rinka', text: 'Sekarung gandum di Gold Mines dihargai 90 keping, dan kas kota Isam penuh dari tambang baru. Membuka pilihan "Kemitraan" di balasan surat Isam.' },
+    clue_kayu: { name: 'Kayu murah dari Greenleaf', from: 'Barro', text: 'Penebang yang pulang ke hutan Greenleaf menjual kayu tumbang dengan harga murah. Semua bangunan 20% lebih murah.' },
+    clue_tessin: { name: 'Penyeberangan dangkal Sungai Tessin', from: 'Pak Dirun', text: 'Ada penyeberangan dangkal di hulu Sungai Tessin. Proyek Jalur Desa Barat lebih murah 100 keping dan 40% lebih cepat.' },
+    ooloHelp: { name: 'Bantuan Kaum Oolo untuk nelayan South Lake', from: 'Oolo', text: 'Kaum Oolo menambal jaring dan perahu desa nelayan South Lake. Proyek Dermaga South Lake dua kali lebih cepat.' },
+    hassanHelp: { name: 'Prajurit Lakeward ikut membangun', from: 'Jenderal Hassan', text: 'Empat prajurit Lakeward bekerja sebagai tukang. Pekerja +4.' }
+  };
 
   /* ---------- rombongan pendatang ---------- */
   const ORIGIN = {
@@ -77,7 +96,7 @@ window.V = window.V || {};
     s.deal = s.deal || null; s.gm = s.gm == null ? 50 : s.gm;
     s.southLake = s.southLake || 0; s.dealIncome = s.dealIncome || 0;
     s.nextGroup = s.nextGroup || 1; s.jobSeq = s.jobSeq || 1;
-    s.today = s.today || []; s.arriveT = s.arriveT || 0;
+    s.today = s.today || []; s.arriveT = s.arriveT || 0; s.courier = s.courier || [];
     // simpanan lama (kerja dalam "hari-kerja") diubah ke detik nyata
     const fix = j => { if (j && !j.done && !j.sec) { const f = j.prog / j.work; j.work = 180; j.prog = f * 180; j.sec = true; j.order = j.order || s.jobSeq++; } };
     for (const k in s.builds) fix(s.builds[k]); for (const k in s.projects) fix(s.projects[k]);
@@ -94,16 +113,16 @@ window.V = window.V || {};
   /* ---------- tindakan pemain ----------
      Lama pembangunan dihitung dalam detik nyata (seperti Metropolismania):
      dengan 6 pekerja, rumah selesai sekitar 3 menit, toko sekitar 5 menit. */
-  function canBuild(s, plotId, type) { const p = plotById(plotId); const c = costOf(p, type); return s.stats.kas >= c.cost && !s.builds[plotId]; }
+  function canBuild(s, plotId, type) { const p = plotById(plotId); const c = costOf(p, type, s); return s.stats.kas >= c.cost && !s.builds[plotId]; }
   function startBuild(s, plotId, type) {
-    const p = plotById(plotId), c = costOf(p, type);
+    const p = plotById(plotId), c = costOf(p, type, s);
     if (s.stats.kas < c.cost || s.builds[plotId]) return false;
     s.stats.kas -= c.cost; s.builds[plotId] = { type, work: c.work, prog: 0, done: false, sec: true, order: s.jobSeq++ };
     return true;
   }
   function startProject(s, id) {
-    const pr = PROJECTS[id]; if (s.projects[id] || s.stats.kas < pr.cost) return false;
-    s.stats.kas -= pr.cost; s.projects[id] = { work: id === 'dermagaSL' && s.flags.ooloHelp ? Math.round(pr.work / 2) : pr.work, prog: 0, done: false, sec: true, order: s.jobSeq++ };
+    const c = projectCost(s, id); if (s.projects[id] || s.stats.kas < c.cost) return false;
+    s.stats.kas -= c.cost; s.projects[id] = { work: c.work, prog: 0, done: false, sec: true, order: s.jobSeq++ };
     return true;
   }
   function signDeal(s, id, byAldric) {
@@ -153,7 +172,7 @@ window.V = window.V || {};
         j.done = true; changed = true;
         let t;
         const bk = Object.keys(s.builds).find(k => s.builds[k] === j);
-        if (bk) { t = `${TYPES[j.type].name} di ${plotById(bk).label.toLowerCase()} selesai dibangun!`; st.moral = Math.min(100, st.moral + 2); }
+        if (bk) { s.lastDone = bk; t = `${TYPES[j.type].name} di ${plotById(bk).label.toLowerCase()} selesai dibangun!`; st.moral = Math.min(100, st.moral + 2); }
         else {
           const pk = Object.keys(s.projects).find(k => s.projects[k] === j);
           if (pk === 'jalurDesa') { t = 'Jalur desa barat dibuka kembali! Gerobak sayur dan domba mulai masuk ke pasar Brennhold.'; st.stabilitas = Math.min(100, st.stabilitas + 2); st.pangan += 2; }
@@ -184,7 +203,7 @@ window.V = window.V || {};
       notes.push(`${k ? TYPES[j.type].name : PROJECTS[Object.keys(s.projects).find(x => s.projects[x] === j)].name}: ${Math.min(99, Math.round(j.prog / j.work * 100))}% (${etaText(s, j)}).`);
     }
     // surat Isam
-    if (s.letters.isam === 'none' && today >= 1) { s.letters.isam = 'received'; notes.unshift('Surat dari Walikota Isam (Gold Mines): harga roti dan ikan di Gold Mines naik tiga kali lipat. Ia menawarkan kerja sama. Lihat di halaman Surat.'); }
+    if (s.letters.isam === 'none' && today >= 1) { s.letters.isam = 'received'; s.flags.isamLetter = true; s.courier.push('isam'); notes.unshift('Surat dari Walikota Isam (Gold Mines): harga roti dan ikan di Gold Mines naik tiga kali lipat. Ia menawarkan kerja sama. Seorang kurir sedang mencarimu.'); }
     if (s.letters.isam === 'received' && s.delegasi === 'tinggi' && today >= 4) { signDeal(s, 'tinggi', true); notes.unshift('Aldric menjawab surat Walikota Isam atas namamu, dengan syarat harga tinggi. "Kebutuhan mereka adalah posisi tawar kita," tulisnya.'); }
     // perjanjian
     if (s.deal && s.deal.pending) {
@@ -323,5 +342,5 @@ window.V = window.V || {};
     return [`Kami rombongan dari ${g.origin}, ${g.size} jiwa. Saya ${g.leader}, yang memimpin.`, WISH[g.kind], waited >= 1 ? 'Kami sudah menunggu sejak kemarin, Presiden. Kalau besok belum ada tempat, kami terpaksa pergi ke Twin River.' : 'Untuk sementara kami tidur di serambi Balai. Penjaga Anda baik sekali.'];
   }
 
-  V.city = { tick, etaText, isQueued, minutesLeft, teams, TYPES, PLOTS, PLOT_ALLOW, PROJECTS, DEALS, plotById, costOf, ensure, canBuild, startBuild, startProject, signDeal, workforce, activeJobs, daily, decorate, residentNpcs, waitingNpcs, groupSpec, groupTalk, absDay };
+  V.city = { projectCost, CLUES, tick, etaText, isQueued, minutesLeft, teams, TYPES, PLOTS, PLOT_ALLOW, PROJECTS, DEALS, plotById, costOf, ensure, canBuild, startBuild, startProject, signDeal, workforce, activeJobs, daily, decorate, residentNpcs, waitingNpcs, groupSpec, groupTalk, absDay };
 })(window.V);

@@ -29,7 +29,7 @@
 
   /* ---------- input ---------- */
   const keys = {}, pressed = new Set();
-  const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', KeyZ: 'a', Space: 'a', Enter: 'a', KeyX: 'b', Escape: 'b', ShiftLeft: 'run', ShiftRight: 'run' };
+  const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', KeyZ: 'a', Space: 'a', Enter: 'a', KeyX: 'b', Escape: 'b', KeyC: 'book', Tab: 'book', ShiftLeft: 'run', ShiftRight: 'run' };
   window.addEventListener('keydown', e => {
     if (e.target && e.target.tagName === 'INPUT') return;
     const k = KEYMAP[e.code]; if (!k) return;
@@ -172,6 +172,12 @@
   function doAct(act) {
     if (act === 'office') openOffice();
     else if (act === 'sleep') sleep();
+    else if (act && act.startsWith('deal:')) { C.signDeal(S, act.slice(5), false); toast('Kurir membawa balasanmu ke Gold Mines. Uang muka tiba besok pagi.', 3.4); }
+    else if (act === 'later') toast('Surat bisa dijawab kapan saja dari Buku Saku (C)', 3);
+    else if (act && act.startsWith('go:')) {
+      const dest = { balai: ['balai', 288, 290, 'up'], plaza: ['plaza', 360, 200, 'down'], kampung: ['kampung', 384, 220, 'down'] }[act.slice(3)];
+      fadeTo(() => { S.minutes += 30; enterMap(dest[0], dest[1], dest[2], dest[3]); if (S.minutes >= 24 * 60) newDay(false); });
+    }
     else if (act === 'hassanHelp') { S.flags.hassanHelp = true; S.stats.stabilitas = Math.max(0, S.stats.stabilitas - 1); openDialog({ name: 'Jenderal Hassan', title: 'Kastil Lakeward', spec: 'hassan', pages: ['Bagus! Besok pagi tiga regu prajuritku melapor ke Barro. Mereka akan menggerutu sehari, lalu bekerja seperti kerbau.', 'Kalistov pasti menulis surat soal prajurit yang "dipakai jadi kuli". Biar saja. (Pekerja +4)'] }); }
     else if (act === 'ooloHelp') { S.flags.ooloHelp = true; if (S.projects.dermagaSL && !S.projects.dermagaSL.done) S.projects.dermagaSL.work = Math.round(S.projects.dermagaSL.work / 2); openDialog({ name: 'Oolo', title: 'Nelayan dari Twin River', spec: 'oolo', pages: ['Gluk! Oolo akan mengirim kabar lewat sungai. Saudara-saudara Oolo akan datang ke desa nelayan South Lake untuk menambal jaring dan perahu.', '(Proyek Dermaga dan Rumah Asap Ikan South Lake jadi dua kali lebih cepat.)'] }); }
   }
@@ -194,7 +200,7 @@
     const jobs = C.activeJobs(S).length + 1, per = C.workforce(S) / jobs;
     $('build').innerHTML = `<h2>${p.kind === 'burnt' ? 'Bangun ulang' : 'Bangun'}: ${p.label}</h2><p class="sub">Kas ${S.stats.kas.toLocaleString('id-ID')} keping · ${C.workforce(S)} pekerja · ${C.activeJobs(S).length} pekerjaan berjalan</p>
       <div class="panel-body"><div class="list" style="margin-top:4em">${types.map((k, i) => {
-        const t = C.TYPES[k], c = C.costOf(p, k), wait = S.waiting.filter(g => t.fits.includes(g.kind)).length, days = Math.max(1, Math.round(c.work / (1 + (C.workforce(S) - 6) * .06) / 60));
+        const t = C.TYPES[k], c = C.costOf(p, k, S), wait = S.waiting.filter(g => t.fits.includes(g.kind)).length, days = Math.max(1, Math.round(c.work / (1 + (C.workforce(S) - 6) * .06) / 60));
         return `<button type="button" class="act big${i === build.sel ? ' sel' : ''}" data-b="${k}" ${S.stats.kas < c.cost ? 'disabled' : ''}><b>${t.name}</b>${t.desc}<small>${c.cost} keping · sekitar ${days} menit${t.fits.length ? ' · untuk ' + t.fits.join('/') + (wait ? ` · ${wait} rombongan menunggu` : '') : ''}${S.stats.kas < c.cost ? ' · kas tidak cukup' : ''}</small></button>`;
       }).join('')}</div></div>
       <div class="panel-foot"><span>▲ ▼ pilih · Z bangun · X batal</span><button type="button" id="build-close">Batal</button></div>`;
@@ -215,6 +221,42 @@
     if (hit('a')) doBuild();
   }
   function npcCtx() { return { name: S.name, period: period(S.minutes), day: S.day, flags: S.flags }; }
+  let seenClues = null;
+  function checkClues() {
+    if (!S) return; if (!seenClues) seenClues = new Set(Object.keys(C.CLUES).filter(k => S.flags[k]));
+    for (const k in C.CLUES) if (S.flags[k] && !seenClues.has(k)) { seenClues.add(k); toast('Petunjuk baru: ' + C.CLUES[k].name, 3.4); }
+  }
+  /* kurir: surat penting diantar langsung ke pemain */
+  let courier = null;
+  function updateCourier(dt) {
+    if (!courier) {
+      if (!S.courier || !S.courier.length || S.letters.isam !== 'received') { if (S.courier && S.courier.length && S.letters.isam !== 'received') S.courier.shift(); return; }
+      const ang = rand() * 6.28, x = Math.max(10, Math.min(map.w - 10, player.x + Math.cos(ang) * 150)), y = Math.max(20, Math.min(map.h - 4, player.y + Math.sin(ang) * 110));
+      courier = { x, y, dir: 'down', anim: 0, moving: true, phase: 'come', t: 0 };
+      toast('Seorang kurir mencarimu!', 2.4);
+      return;
+    }
+    courier.t += dt;
+    const tx = courier.phase === 'come' ? player.x : courier.lx, ty = courier.phase === 'come' ? player.y + 2 : courier.ly;
+    const dx = tx - courier.x, dy = ty - courier.y, d = Math.hypot(dx, dy);
+    if (courier.phase === 'come' && d < 18) {
+      courier.moving = false; courier.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+      S.courier.shift(); courier.phase = 'leave'; courier.lx = courier.x + (courier.x < player.x ? -170 : 170); courier.ly = courier.y + 40;
+      const deals = C.DEALS.filter(x => !x.needs || S.flags[x.needs]);
+      openDialog({ name: 'Kurir Republik', title: 'Pengantar surat', spec: 'kurir', pages: [
+        'Presiden! Akhirnya ketemu juga. Surat dari Walikota Isam, Gold Mines. Katanya penting.',
+        '"Gold Mines punya emas, tapi tidak punya roti. Gerobak dari desa-desa sekitar Brennhold tidak pernah datang lagi, dan ikan asap dari desa nelayan South Lake berhenti di tengah jalan. Harga gandum di pasar kami naik tiga kali lipat."',
+        '"Saya mengusulkan kerja sama: Brennhold dan South Lake memasok pangan, Gold Mines membayar dengan emas. Saya bersedia membayar sebagian di muka. Sebutkan syarat Anda. — Isam"',
+        S.flags.clue_hargaGM ? 'Kamu teringat kata Rinka: gandum di Gold Mines sekarang 90 keping sekarung, dan kas Isam sedang penuh.' : 'Kurir menunggu jawabanmu. (Bicara dulu dengan pedagang di pasar mungkin memberi gambaran harga yang lebih baik.)'
+      ], choices: deals.map(x => ({ label: `${x.name}: uang muka ${x.advance}, sekitar ${x.daily}/hari`, act: 'deal:' + x.id })).concat([{ label: 'Pikirkan dulu (jawab nanti dari Buku Saku)', act: 'later' }]) });
+      return;
+    }
+    if (courier.phase === 'leave' && (d < 4 || courier.t > 6)) { if (mode === 'play') courier = null; return; }
+    if (courier.phase === 'leave' && mode !== 'play') return;
+    const sp = 105 * dt; courier.x += dx / d * sp; courier.y += dy / d * sp; courier.moving = true; courier.anim += dt * 9;
+    courier.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+  }
+  let ping = null;
   function talkTo(n) {
     const opp = { up: 'down', down: 'up', left: 'right', right: 'left' };
     n.homeDir = n.home.dir; n.dir = opp[player.dir]; n.tx = null; n.moving = false;
@@ -283,8 +325,16 @@
     ['tinggi', 'Tinggi', 'Aldric menangani hampir semua urusan rutin atas namamu. Cepat dan akurat, tapi dia akan memilih jalan yang paling efektif, bukan yang paling disukai rakyat.']
   ];
   let office = null;
-  const TABS = ['Laporan Harian', 'Proyek', 'Surat', 'Kondisi Negara', 'Delegasi'];
-  function openOffice() { mode = 'office'; office = { tab: 0, sel: 0 }; $('hint').hidden = true; renderOffice(); $('office').hidden = false; }
+  const BOOK_TABS = ['Laporan Harian', 'Pembangunan', 'Surat', 'Petunjuk'], DESK_TABS = ['Delegasi', 'Kondisi Negara', 'Laporan Harian', 'Pembangunan', 'Surat', 'Petunjuk'];
+  const tabsNow = () => office.book ? BOOK_TABS : DESK_TABS;
+  function openOffice(book) { mode = 'office'; office = { tab: 0, sel: 0, book: !!book }; $('hint').hidden = true; renderOffice(); $('office').hidden = false; }
+  function openBook() { openOffice(true); if (S.letters.isam === 'received') { office.tab = 2; renderOffice(); } }
+  function tabPetunjuk() {
+    const have = Object.keys(C.CLUES).filter(k => S.flags[k]);
+    let h = '<div class="list">' + (have.length ? have.map(k => { const c = C.CLUES[k]; return `<div class="item"><h3>${c.name}</h3><p>${c.text}</p><div class="meta">Dari ${c.from}</div></div>`; }).join('') : '<p class="empty">Belum ada petunjuk.</p>');
+    h += `<p class="empty" style="margin-top:2em">Warga yang punya kabar atau tawaran ditandai <b style="color:var(--gold)">!</b> di atas kepalanya. Petunjuk dari lapangan membuka pilihan yang lebih baik dan membuat pembangunan lebih murah.</p></div>`;
+    return h;
+  }
   function closeOffice() { $('office').hidden = true; office = null; mode = 'play'; hudKey = ''; }
   function statCard(key, label, val, prev, bar, unit) {
     const d = prev == null ? 0 : val - prev;
@@ -297,9 +347,9 @@
     let h = `<div class="list"><div class="item"><h3>Tenaga kerja: ${wf} pekerja</h3><p>${S.workers} tukang tetap${S.flags.hassanHelp ? ' · 4 prajurit Lakeward' : ''}${S.hire ? ' · 4 pekerja harian' : ''}. Pekerja dibagi rata ke semua pembangunan dan proyek yang sedang berjalan.</p>
       <div class="row"><span class="meta">Pekerja harian: 4 orang, 32 keping per hari</span><button type="button" class="act" data-a="hire">${S.hire ? 'Berhenti menyewa' : 'Sewa pekerja harian'}</button></div></div>`;
     for (const id in C.PROJECTS) {
-      const pr = C.PROJECTS[id], j = S.projects[id];
+      const pr = C.PROJECTS[id], j = S.projects[id], pc = C.projectCost(S, id);
       let row;
-      if (!j) row = `<span class="meta">${pr.cost} keping · ${pr.work} hari-kerja${id === 'dermagaSL' && S.flags.ooloHelp ? ' (dibantu Kaum Oolo: lebih cepat)' : ''}</span><button type="button" class="act" data-a="proj:${id}" ${S.stats.kas < pr.cost ? 'disabled' : ''}>Mulai proyek</button>`;
+      if (!j) row = `<span class="meta">${pc.cost} keping · sekitar ${Math.round(pc.work / 60)} menit${pc.work < pr.work ? ' (lebih cepat berkat petunjuk)' : ''}</span><button type="button" class="act" data-a="proj:${id}" ${S.stats.kas < pc.cost ? 'disabled' : ''}>Mulai proyek</button>`;
       else if (!j.done) row = `<div class="prog"><i style="width:${pct(j)}%"></i></div><span class="meta">${pct(j)}% · ${C.etaText(S, j)}</span>`;
       else row = `<span class="tag">Selesai</span>`;
       h += `<div class="item"><h3>${pr.name}</h3><p>${pr.desc}</p><div class="row">${row}</div></div>`;
@@ -322,7 +372,7 @@
       <p>Gold Mines punya emas, perak, dan tangan-tangan yang kuat. Yang tidak kami punya adalah roti. Sejak perang, gerobak dari desa-desa di sekitar Brennhold tidak pernah datang lagi, dan ikan asap dari desa nelayan South Lake berhenti di tengah jalan. Harga sekarung gandum di pasar kami tiga kali lipat harga tahun lalu. Para penambang mulai marah.</p>
       <p>Saya mengusulkan kerja sama: Brennhold dan South Lake memasok pangan, Gold Mines membayar dengan emas. Saya bersedia membayar sebagian di muka untuk membantu pembangunan ibu kota. Sebutkan syarat Anda.</p>
       <p class="sig">Isam, Walikota Gold Mines</p></div>`;
-    if (L === 'received') return letter + `<p class="sec-title">Balasan Anda</p><div class="list">${C.DEALS.map(d => `<button type="button" class="act big" data-a="deal:${d.id}"><b>${d.name}</b>${d.text}<small>Uang muka ${d.advance} keping · sekitar ${d.daily} keping/hari setelah jalur dibuka</small></button>`).join('')}</div>`;
+    if (L === 'received') return letter + `<p class="sec-title">Balasan Anda</p><div class="list">${C.DEALS.filter(d => !d.needs || S.flags[d.needs]).map(d => `<button type="button" class="act big" data-a="deal:${d.id}"><b>${d.name}</b>${d.text}<small>Uang muka ${d.advance} keping · sekitar ${d.daily} keping/hari setelah jalur dibuka</small></button>`).join('')}</div>`;
     const d = C.DEALS.find(x => x.id === S.deal.id), desa = S.projects.jalurDesa && S.projects.jalurDesa.done, ikan = S.projects.dermagaSL && S.projects.dermagaSL.done;
     return `<div class="list"><div class="item"><h3>Perjanjian Pangan Gold Mines: ${d.name}</h3><p>${S.deal.byAldric ? 'Ditandatangani Aldric atas namamu. ' : ''}${S.deal.pending ? 'Jawabanmu sedang dibawa kurir ke Gold Mines. Uang muka tiba besok pagi.' : `Uang muka ${S.deal.advance} keping sudah diterima.`}</p>
       <div class="row"><span class="meta">Jalur desa barat: ${desa ? 'terbuka' : 'rusak'} · Dermaga South Lake: ${ikan ? 'terbuka' : 'rusak'}</span></div>
@@ -333,7 +383,8 @@
   function renderOffice() {
     const st = S.stats, pv = S.prev || {};
     let body = '';
-    if (office.tab === 0) {
+    const tname = tabsNow()[office.tab];
+    if (tname === 'Laporan Harian') {
       const notes = S.notes.length ? S.notes : ['Republik Varsena genap berusia tiga bulan.', 'Cadangan pangan cukup untuk 18 hari. Sebagian besar gandum datang dari South Lake.', 'Laporan pertama ini disusun oleh Sekretaris Aldric Vane.'];
       body = `<div class="stats">
         ${statCard('populasi', 'Populasi Brennhold', st.populasi, pv.populasi, false, ' jiwa')}
@@ -347,9 +398,10 @@
       <ul class="notes">${notes.map(n => `<li>${n}</li>`).join('')}</ul>
       <p class="sec-title">Saran sekretaris</p>
       <div class="advice"><span id="adv-portrait"></span><p><b>Aldric Vane</b>${D.advice(S)}</p></div>`;
-    } else if (office.tab === 1) body = tabProyek();
-    else if (office.tab === 2) body = tabSurat();
-    else if (office.tab === 3) {
+    } else if (tname === 'Pembangunan') body = tabProyek();
+    else if (tname === 'Surat') body = tabSurat();
+    else if (tname === 'Petunjuk') body = tabPetunjuk();
+    else if (tname === 'Kondisi Negara') {
       body = `<table class="cities"><thead><tr><th>Kota</th><th>Keadaan</th><th>Kekuatan</th><th>Kunjungan</th></tr></thead><tbody>
         ${CITIES.map(c => `<tr><td class="n">${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td><td>${c[3] ? '<span class="tag">Di sini</span>' : '<span class="tag lock">Tahap berikutnya</span>'}</td></tr>`).join('')}
       </tbody></table>`;
@@ -357,10 +409,10 @@
       body = `<div class="deleg">${DELEG.map((d, i) => `<button type="button" data-a="deleg:${i}" class="${S.delegasi === d[0] ? 'on' : ''}"><b>${d[1]}${S.delegasi === d[0] ? ' · aktif' : ''}</b><span>${d[2]}</span></button>`).join('')}</div>`;
     }
     const unread = S.letters.isam === 'received' ? ' •' : '';
-    $('office').innerHTML = `<h2>Meja Kerja Presiden</h2><p class="sub">${dateLabel()} · ${clock(S.minutes)} · Kas ${st.kas.toLocaleString('id-ID')} keping</p>
-      <div class="tabs">${TABS.map((t, i) => `<button type="button" data-t="${i}" class="${i === office.tab ? 'on' : ''}">${t}${i === 2 ? unread : ''}</button>`).join('')}</div>
+    $('office').innerHTML = `<h2>${office.book ? 'Buku Saku Presiden' : 'Meja Kerja Presiden'}</h2><p class="sub">${dateLabel()} · ${clock(S.minutes)} · Kas ${st.kas.toLocaleString('id-ID')} keping</p>
+      <div class="tabs">${tabsNow().map((t, i) => `<button type="button" data-t="${i}" class="${i === office.tab ? 'on' : ''}">${t}${t === 'Surat' ? unread : ''}</button>`).join('')}</div>
       <div class="panel-body">${body}</div>
-      <div class="panel-foot"><span>${office.tab === 2 && S.letters.isam === 'received' ? 'Gulir ke bawah atau tekan ▼ untuk memilih balasan' : '◀ ▶ ganti halaman · ▲ ▼ pilih · Z tetapkan · X tutup'}</span><button type="button" id="office-close">Tutup</button></div>`;
+      <div class="panel-foot"><span>${tname === 'Surat' && S.letters.isam === 'received' ? 'Gulir ke bawah atau tekan ▼ untuk memilih balasan' : '◀ ▶ ganti halaman · ▲ ▼ pilih · Z tetapkan · X tutup'}</span><button type="button" id="office-close">Tutup</button></div>`;
     $('office').querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => { office.tab = +b.dataset.t; office.sel = 0; renderOffice(); }));
     $('office').querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => officeAct(b.dataset.a)));
     $('office-close').addEventListener('click', closeOffice);
@@ -379,8 +431,10 @@
   }
   function updateOffice() {
     if (hit('b')) return closeOffice();
-    if (hit('left')) { office.tab = (office.tab + TABS.length - 1) % TABS.length; office.sel = 0; renderOffice(); }
-    if (hit('right')) { office.tab = (office.tab + 1) % TABS.length; office.sel = 0; renderOffice(); }
+    if (hit('book') && office.book) return closeOffice();
+    const TL = tabsNow().length;
+    if (hit('left')) { office.tab = (office.tab + TL - 1) % TL; office.sel = 0; renderOffice(); }
+    if (hit('right')) { office.tab = (office.tab + 1) % TL; office.sel = 0; renderOffice(); }
     const bs = officeButtons();
     if (bs.length) {
       if (hit('up')) { office.sel = (office.sel + bs.length - 1) % bs.length; office.kb = true; markOffice(); }
@@ -395,12 +449,12 @@
 
   /* ---------- menu ---------- */
   let menu = null;
-  const MENU = [['Lanjutkan', 'close'], ['Simpan permainan', 'save'], ['Kontrol', 'keys'], ['Kembali ke layar judul', 'title']];
+  const MENU = [['Lanjutkan', 'close'], ['Buku Saku (C)', 'book'], ['Perjalanan cepat', 'travel'], ['Simpan permainan', 'save'], ['Kontrol', 'keys'], ['Kembali ke layar judul', 'title']];
   function openMenu() { mode = 'menu'; menu = { sel: 0, view: 'list' }; $('hint').hidden = true; renderMenu(); $('menu').hidden = false; }
   function closeMenu() { $('menu').hidden = true; menu = null; mode = 'play'; }
   function renderMenu() {
     if (menu.view === 'keys') {
-      $('menu').innerHTML = `<h2>Kontrol</h2><p class="keys"><kbd>Panah</kbd> / <kbd>WASD</kbd> berjalan<br><kbd>Shift</kbd> tahan untuk berlari<br><kbd>Z</kbd> / <kbd>Spasi</kbd> bicara, periksa, lanjut<br><kbd>X</kbd> / <kbd>Esc</kbd> menu, batal<br>Di HP: tombol arah, A, dan B di bawah layar.</p><div class="panel-foot"><span></span><button type="button" id="menu-back">Kembali</button></div>`;
+      $('menu').innerHTML = `<h2>Kontrol</h2><p class="keys"><kbd>Panah</kbd> / <kbd>WASD</kbd> berjalan<br><kbd>Shift</kbd> tahan untuk berlari<br><kbd>Z</kbd> / <kbd>Spasi</kbd> bicara, periksa, lanjut<br><kbd>X</kbd> / <kbd>Esc</kbd> menu, batal<br><kbd>C</kbd> Buku Saku<br>Di HP: tombol arah, A, dan B di bawah layar.</p><div class="panel-foot"><span></span><button type="button" id="menu-back">Kembali</button></div>`;
       $('menu-back').addEventListener('click', () => { menu.view = 'list'; renderMenu(); });
       return;
     }
@@ -411,6 +465,8 @@
     const a = MENU[menu.sel][1];
     if (a === 'close') closeMenu();
     else if (a === 'save') { saveGame(false); closeMenu(); }
+    else if (a === 'book') { closeMenu(); openBook(); }
+    else if (a === 'travel') { closeMenu(); openDialog({ pages: ['Ke mana? Perjalanan memakan waktu sekitar setengah jam.'], choices: [{ label: 'Balai Republik', act: 'go:balai' }, { label: 'Alun-alun', act: 'go:plaza' }, { label: 'Pemukiman Selatan', act: 'go:kampung' }, { label: 'Batal', act: null }] }); }
     else if (a === 'keys') { menu.view = 'keys'; renderMenu(); }
     else if (a === 'title') { closeMenu(); toTitle(); }
   }
@@ -439,7 +495,7 @@
     beginGame(D.newState(name), true);
   });
   function beginGame(state, fresh) {
-    S = C.ensure(state); $('title').hidden = true; $('hud').hidden = false; hudKey = '';
+    S = C.ensure(state); courier = null; ping = null; seenClues = null; $('title').hidden = true; $('hud').hidden = false; hudKey = '';
     enterMap(S.map || 'balai', S.x || 100, S.y || 196, S.dir || 'down');
     updateHud(); mode = 'play';
     if (fresh) openDialog({ pages: [
@@ -447,8 +503,8 @@
       'Perang saudara yang menyusul meruntuhkan kerajaan itu. Dari abunya lahir Republik Varsena.',
       'Kamu, ' + S.name + ', yang memimpin perang kemerdekaan, kini menjadi Presiden pertamanya.',
       'Ini pagi pertamamu di Balai Republik. Perang sudah selesai. Pekerjaan yang sesungguhnya baru dimulai.',
-      'Berjalan: tombol panah atau WASD (tahan Shift untuk berlari). Bicara dan periksa: Z atau Spasi. Menu: X atau Esc.',
-      'Hari berganti sendiri tengah malam, kira-kira setiap 10 menit. Bangunan dan proyek dikerjakan terus selama kamu bermain.'
+      'Berjalan: tombol panah atau WASD (tahan Shift untuk berlari). Bicara dan periksa: Z atau Spasi. Buku Saku: C. Menu dan perjalanan cepat: X atau Esc.',
+      'Hari berganti sendiri tengah malam, kira-kira setiap 10 menit. Hampir semua urusan diselesaikan di lapangan: bangun di petak, dengarkan warga yang bertanda !, dan baca Buku Saku di mana saja.'
     ] });
     else toast('Selamat datang kembali, Presiden ' + S.name);
   }
@@ -482,6 +538,9 @@
     if (S.minutes >= 24 * 60) { newDay(false); return; }
     const res = C.tick(S, dt, rand);
     for (const t of res.events) toast(t, 3.4);
+    if (S.lastDone) { const pl = C.plotById(S.lastDone); ping = { map: pl.map, x: pl.r[0] + pl.r[2] / 2, y: pl.r[1] - (pl.kind === 'burnt' ? 70 : 40), t: 20 }; S.lastDone = null; }
+    if (ping) { ping.t -= dt; if (ping.t <= 0) ping = null; }
+    updateCourier(dt); checkClues();
     if (res.changed) { C.decorate(map, S); if (map.id === 'plaza' || map.id === 'kampung') spawnNpcs(period(S.minutes)); hudKey = ''; }
     const per = period(S.minutes);
     if (per !== lastPeriod) { lastPeriod = per; spawnNpcs(per); toast(PERIOD_LABEL[per] + ' tiba', 1.8); }
@@ -492,6 +551,7 @@
     if (t) { hint.innerHTML = '<b>' + (touchOn ? 'A' : 'Z') + '</b>' + t.label; hint.hidden = false; } else hint.hidden = true;
     if (hit('a') && t) { hint.hidden = true; interact(t); return; }
     if (hit('b')) openMenu();
+    else if (hit('book')) openBook();
   }
   function update(dt) {
     if (placeTimer > 0) { placeTimer -= dt; if (placeTimer <= 0) $('place').classList.add('fade'); }
@@ -522,6 +582,24 @@
     ctx.fillStyle = 'rgba(14,8,18,.32)'; ctx.beginPath(); ctx.ellipse(sx, sy - 1, 7, 2.5, 0, 0, 7); ctx.fill();
     ctx.drawImage(c, sx - Math.floor(c.width / 2), sy - c.height + 2);
   }
+  function mark(x, y) {
+    ctx.fillStyle = '#18110f'; ctx.fillRect(x - 4, y - 1, 9, 12); ctx.fillRect(x - 1, y + 11, 3, 2);
+    ctx.fillStyle = '#e6c682'; ctx.fillRect(x - 3, y, 7, 10); ctx.fillRect(x, y + 10, 1, 2);
+    ctx.fillStyle = '#18110f'; ctx.fillRect(x - 0, y + 2, 1, 4); ctx.fillRect(x, y + 7, 1, 1);
+  }
+  function arrowDown(x, y) {
+    ctx.fillStyle = '#18110f'; for (let i = 0; i < 7; i++) ctx.fillRect(x - 7 + i, y - 10 + i, 15 - i * 2, 1);
+    ctx.fillStyle = '#f2c466'; for (let i = 0; i < 6; i++) ctx.fillRect(x - 5 + i, y - 10 + i, 11 - i * 2, 1); ctx.fillRect(x - 2, y - 18, 5, 8);
+  }
+  function edgeArrow(sx, sy) {
+    const cx = VW / 2, cy = VH / 2, a = Math.atan2(sy - cy, sx - cx);
+    const r = Math.min((VW / 2 - 14) / Math.abs(Math.cos(a) || 1e-6), (VH / 2 - 14) / Math.abs(Math.sin(a) || 1e-6));
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a);
+    ctx.fillStyle = '#18110f'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f2c466'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   function render() {
     if (!map) return;
     cam.x = map.w <= VW ? (map.w - VW) / 2 : Math.max(0, Math.min(map.w - VW, player.x - VW / 2));
@@ -534,7 +612,17 @@
     if (map.dyn) for (const p of map.dyn) list.push({ b: p.base, f: () => ctx.drawImage(p.c, p.x - cam.x, p.y - cam.y) });
     for (const n of npcs) list.push({ b: n.y, f: () => drawEntity(n.def.spec, n.def.specObj || D.SPEC[n.def.spec], n.x, n.y, n.dir, n.moving, n.anim) });
     if (mode !== 'title') list.push({ b: player.y + .1, f: () => drawEntity('presiden', D.SPEC.presiden, player.x, player.y, player.dir, player.moving, player.anim) });
+    if (courier && mode !== 'title') list.push({ b: courier.y, f: () => drawEntity('kurir', D.SPEC.kurir, courier.x, courier.y, courier.dir, courier.moving, courier.anim) });
     list.sort((a, b) => a.b - b.b).forEach(e => e.f());
+    if (S && mode !== 'title') {
+      const bob = Math.round(Math.sin(performance.now() / 180) * 1.5);
+      for (const n of npcs) if (n.def.news && n.def.news(S.flags ? S : S)) mark(Math.round(n.x - cam.x), Math.round(n.y - cam.y) - 46 + bob);
+      if (ping && ping.map === map.id) {
+        const sx = ping.x - cam.x, sy = ping.y - cam.y;
+        if (sx > 8 && sx < VW - 8 && sy > 8 && sy < VH - 8) arrowDown(Math.round(sx), Math.round(sy) + bob * 2);
+        else edgeArrow(sx, sy);
+      }
+    }
     // cahaya
     const lp = lightParams(S ? S.minutes : 12 * 60);
     let d = lp.d * (map.indoor ? .55 : 1);
@@ -578,5 +666,5 @@
   }
   if (hot && typeof hot.ready === 'function') hot.ready(start); else start((hot && hot.data) || {});
 
-  V.game = { get state() { return S; }, get mode() { return mode; }, player, sleep: () => sleep(false), openOffice: t => { openOffice(); office.tab = t || 0; renderOffice(); }, plot: id => plotAction(id), enterMap: (id, x, y, d) => enterMap(id, x, y, d), setTime: m => { if (S) { S.minutes = m; hudKey = ''; } } };
+  V.game = { get state() { return S; }, get mode() { return mode; }, player, sleep: () => sleep(false), openOffice: t => { openOffice(true); office.tab = t || 0; renderOffice(); }, get courier() { return courier; }, plot: id => plotAction(id), enterMap: (id, x, y, d) => enterMap(id, x, y, d), setTime: m => { if (S) { S.minutes = m; hudKey = ''; } } };
 })(window.V);

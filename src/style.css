@@ -126,6 +126,7 @@ body { font-family: var(--f-ui); -webkit-user-select: none; user-select: none; t
 .abtns { display: flex; gap: 14px; align-items: center; }
 .abtns button { width: 64px; height: 64px; border-radius: 50%; font-size: 22px; }
 .abtns .b { width: 52px; height: 52px; margin-top: 30px; }
+.abtns .c { width: 52px; height: 40px; border-radius: 10px; font-size: 13px; margin-top: 50px; }
 @media (prefers-reduced-motion: reduce) { .dlg-next { animation: none; } #fade, #place { transition: none; } }
 
 #hud-kas { font-family: var(--f-pixel); font-size: 6.5em; color: var(--muted); line-height: 1.3; }
